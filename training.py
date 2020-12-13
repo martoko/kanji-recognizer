@@ -9,7 +9,7 @@ import torch.optim as optim
 import torchvision
 import torchvision.transforms as transforms
 
-import datasets
+import kanji
 from model import KanjiRecognizer
 
 
@@ -26,9 +26,9 @@ def run(args):
 
     transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
 
-    trainset = datasets.Kanji(args.font_file, args.background_images_folder, party_mode=True, transform=transform)
+    trainset = kanji.Kanji(args.fonts_folder, args.background_images_folder, party_mode=True, transform=transform)
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=128)
-    testset = datasets.Kanji(args.font_file, args.background_images_folder, party_mode=True, transform=transform)
+    testset = kanji.Kanji(args.fonts_folder, args.background_images_folder, party_mode=True, transform=transform)
     testloader = torch.utils.data.DataLoader(testset, batch_size=128)
 
     # # get some random training images
@@ -40,7 +40,7 @@ def run(args):
     # # print labels
     # print(' '.join('%5s' % classes[labels[j]] for j in range(4)))
 
-    PATH = './cifar_net.pt'
+    PATH = './saved_model.pt'
     model = KanjiRecognizer(input_dimensions=32, output_dimensions=len(trainset.characters())).to(device)
     if os.path.exists(PATH):
         model.load_state_dict(torch.load(PATH))
@@ -71,20 +71,17 @@ def run(args):
             print(f'[{i + 1:5d}] loss: {running_loss / epoch_length:.3f}')
             running_loss = 0.0
 
-        if i >= 2000:
+        if i >= 1000:
             break
 
     print('Finished Training')
 
     torch.save(model.state_dict(), PATH)
 
-    model = KanjiRecognizer(input_dimensions=32, output_dimensions=len(trainset.characters())).to(device)
-    model.load_state_dict(torch.load(PATH))
-
     correct = 0
     total = 0
     with torch.no_grad():
-        for data in trainloader:
+        for data in testloader:
             images, labels = data
             images = images.to(device)
             labels = labels.to(device)
@@ -94,29 +91,15 @@ def run(args):
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
 
-            if total >= 1000:
+            if total >= 10000:
                 break
 
-    print('Accuracy of the network on the 1000 test images: %d %%' % (100 * correct / total))
+    print('Accuracy of the network on the 10000 test images: %d %%' % (100 * correct / total))
 
     dataiter = iter(trainloader)
     images, labels = dataiter.next()
     images = images.to(device)
     labels = labels.to(device)
-
-    outputs = model(images)
-    _, predicted = torch.max(outputs, 1)
-
-    print('GroundTruth:', ' '.join('%5s' % chr(trainset.characters()[labels[j]]) for j in range(10)))
-    print('Predicted:\t', ' '.join('%5s' % chr(trainset.characters()[predicted[j]]) for j in range(10)))
-
-    print("########### PARTY MODE OOOOOOOOOOOOOOOOOOOOOOOOONNNNNN!! ###########")
-
-    # print images
-    imshow(torchvision.utils.make_grid(images[:10]))
-
-    dataiter = iter(testloader)
-    images, labels = dataiter.next()
 
     outputs = model(images)
     _, predicted = torch.max(outputs, 1)
@@ -136,8 +119,8 @@ if __name__ == '__main__':
                         help='amount of sets to generate for each character')
     parser.add_argument('-o', '--output-path', type=str, default='generated',
                         help='path to the folder where generated images are going to be saved')
-    parser.add_argument('-f', '--font-file', type=str, default='/usr/share/fonts/noto-cjk/NotoSerifCJK-Regular.ttc',
-                        help='path to font to use')
+    parser.add_argument('-f', '--fonts-folder', type=str, default='fonts',
+                        help='path to a folder containing fonts')
     parser.add_argument('-b', '--background-images-folder', type=str,
                         help='path to a folder containing background images')
     args = parser.parse_args()
