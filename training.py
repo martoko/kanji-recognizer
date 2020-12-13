@@ -53,7 +53,7 @@ def run(args):
     for i, data in enumerate(trainloader, 0):
         # get the inputs; datasets is a list of [inputs, labels]
         inputs, labels = data
-        images = images.to(device)
+        inputs = inputs.to(device)
         labels = labels.to(device)
 
         # zero the parameter gradients
