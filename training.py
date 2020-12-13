@@ -21,6 +21,9 @@ def imshow(img):
 
 
 def run(args):
+    device = torch.device("cuda" if torch.cuda.is_available() and torch.cuda.get_device_capability() != (3, 0) and
+                                    torch.cuda.get_device_capability()[0] >= 3 else "cpu")
+
     transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
 
     trainset = datasets.Kanji(args.font_file, args.background_images_folder, party_mode=True, transform=transform)
@@ -38,7 +41,7 @@ def run(args):
     # print(' '.join('%5s' % classes[labels[j]] for j in range(4)))
 
     PATH = './cifar_net.pt'
-    model = KanjiRecognizer(input_dimensions=32, output_dimensions=len(trainset.characters()))
+    model = KanjiRecognizer(input_dimensions=32, output_dimensions=len(trainset.characters())).to(device)
     if os.path.exists(PATH):
         model.load_state_dict(torch.load(PATH))
 
@@ -50,6 +53,8 @@ def run(args):
     for i, data in enumerate(trainloader, 0):
         # get the inputs; datasets is a list of [inputs, labels]
         inputs, labels = data
+        images = images.to(device)
+        labels = labels.to(device)
 
         # zero the parameter gradients
         optimizer.zero_grad()
@@ -73,7 +78,7 @@ def run(args):
 
     torch.save(model.state_dict(), PATH)
 
-    model = KanjiRecognizer(input_dimensions=32, output_dimensions=len(trainset.characters()))
+    model = KanjiRecognizer(input_dimensions=32, output_dimensions=len(trainset.characters())).to(device)
     model.load_state_dict(torch.load(PATH))
 
     correct = 0
@@ -81,6 +86,9 @@ def run(args):
     with torch.no_grad():
         for data in trainloader:
             images, labels = data
+            images = images.to(device)
+            labels = labels.to(device)
+
             outputs = model(images)
             _, predicted = torch.max(outputs.data, 1)
             total += labels.size(0)
@@ -93,6 +101,8 @@ def run(args):
 
     dataiter = iter(trainloader)
     images, labels = dataiter.next()
+    images = images.to(device)
+    labels = labels.to(device)
 
     outputs = model(images)
     _, predicted = torch.max(outputs, 1)
