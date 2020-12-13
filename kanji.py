@@ -65,6 +65,8 @@ def random_black_color():
 
 
 def generate_image(character: str, font_file: str, background_image: Optional[Image.Image], party_mode: bool = False):
+    # TODO: Rotate/morph/skew
+    # TODO: Other characters as part of background?
     if party_mode:
         font = ImageFont.truetype(font_file, randint(7, 32))
 
@@ -75,17 +77,17 @@ def generate_image(character: str, font_file: str, background_image: Optional[Im
 
         left, top, right, bottom = font.getbbox(character, anchor='lt', language='ja')
         image = background_image.resize(
-            (right + 2, bottom + 2), resample=PIL.Image.NEAREST, box=(bg_left, bg_top, bg_right, bg_bottom)
+            (right, bottom), resample=PIL.Image.NEAREST, box=(bg_left, bg_top, bg_right, bg_bottom)
         )
         drawing = ImageDraw.Draw(image)
-        drawing.text((1, 1), character, font=font, fill=random_color(), anchor='lt', language='ja')
+        drawing.text((0, 0), character, font=font, fill=random_color(), anchor='lt', language='ja')
         return image.resize((32, 32), resample=PIL.Image.NEAREST)
     else:
         font = ImageFont.truetype(font_file, randint(7, 32))
         left, top, right, bottom = font.getbbox(character, anchor='lt', language='ja')
-        image = Image.new('RGB', (right + 2, bottom + 2), color=random_white_color())
+        image = Image.new('RGB', (right, bottom), color=random_color())
         drawing = ImageDraw.Draw(image)
-        drawing.text((1, 1), character, font=font, fill=random_black_color(), anchor='lt', language='ja')
+        drawing.text((0, 0), character, font=font, fill=random_color(), anchor='lt', language='ja')
         return image.resize((32, 32), resample=PIL.Image.NEAREST)
 
 
@@ -110,7 +112,6 @@ if __name__ == '__main__':
         for axis, image in zip(axes, images):
             axis.axis('off')
             axis.imshow(image)
-            axis.text(12, -5, "hi")
     fig.subplots_adjust(0, 0, 1, 1)
     fig.show()
 
