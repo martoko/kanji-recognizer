@@ -103,6 +103,9 @@ def run(args):
 
     outputs = model(images)
     _, predicted = torch.max(outputs, 1)
+    images = images.cpu()
+    labels = labels.cpu()
+    predicted = predicted.cpu()
 
     print('GroundTruth:', ' '.join('%5s' % chr(trainset.characters()[labels[j]]) for j in range(10)))
     print('Predicted:\t', ' '.join('%5s' % chr(trainset.characters()[predicted[j]]) for j in range(10)))
