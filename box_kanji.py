@@ -84,7 +84,35 @@ def generate_image(character: str, font_file: str, background_image: Optional[Im
 
     drawing = ImageDraw.Draw(image)
     drawing.text((center_x, center_y), character, font=font,
-                 fill=random.sample([random_color(), random_black_color(), random_white_color()], 1)[0],
+                 fill=random_color(),
+                 anchor='lt', language='ja')
+    return image, label
+
+
+def generate_black_on_white_image(character: str, font_file: str, background_image: Optional[Image.Image]):
+    font = ImageFont.truetype(font_file, randint(7, 16))
+
+    bg_left = randint(0, background_image.width - 10)
+    bg_right = randint(bg_left + 5, background_image.width)
+    bg_top = randint(0, background_image.height - 10)
+    bg_bottom = randint(bg_top + 5, background_image.height)
+
+    left, top, right, bottom = font.getbbox(character, anchor='lt', language='ja')
+    # image = background_image.resize(
+    #     (32, 32), resample=PIL.Image.NEAREST, box=(bg_left, bg_top, bg_right, bg_bottom)
+    # )
+    image = Image.new('RGB', (32, 32), color=random_white_color())
+
+    center_x = 32 / 2 - randint(0, right)
+    center_y = 32 / 2 - randint(0, bottom)
+    label = [center_x, center_y, center_x + right, center_y + bottom]
+
+    drawing = ImageDraw.Draw(image)
+    # drawing.text((center_x, center_y), character, font=font,
+    #              fill=random_color(),
+    #              anchor='lt', language='ja')
+    drawing.text((center_x, center_y), character, font=font,
+                 fill=random_black_color(),
                  anchor='lt', language='ja')
     return image, label
 
@@ -101,7 +129,12 @@ if __name__ == '__main__':
 
     def sample(viz_label=False):
         character = chr(random.sample(kanji, k=1)[0])
-        img, label = generate_image(character, random.sample(font_files, 1)[0], random.sample(background_images, 1)[0])
+        if random.randint(0, 1) == 0:
+            img, label = generate_party_image(character, random.sample(font_files, 1)[0],
+                                              random.sample(background_images, 1)[0])
+        else:
+            img, label = generate_black_on_white_image(character, random.choice(font_files),
+                                                       random.choice(background_images))
         if viz_label:
             drawing = ImageDraw.Draw(img)
             drawing.rectangle(label, outline='red')
@@ -133,8 +166,13 @@ class Kanji(IterableDataset):
 
     def generate_kanji(self):
         character = chr(self.characters()[self.character_index])
-        sample, label = generate_image(character, random.sample(self.font_files, 1)[0],
-                                       random.sample(self.background_images, 1)[0])
+
+        if random.randint(0, 1) == 0:
+            sample, label = generate_party_image(character, random.sample(self.font_files, 1)[0],
+                                              random.sample(self.background_images, 1)[0])
+        else:
+            sample, label = generate_black_on_white_image(character, random.choice(self.font_files),
+                                                       random.choice(self.background_images))
         self.character_index = (self.character_index + 1) % len(self.characters())
         return self.transform(sample), np.array(label)
 

@@ -1,4 +1,5 @@
 import glob
+import math
 import os
 import random
 from itertools import chain
@@ -61,14 +62,17 @@ def random_white_color():
 
 
 def random_black_color():
-    return randint(0, 25), randint(0, 25), randint(0, 25)
+    return randint(0, 50), randint(0, 50), randint(0, 50)
 
 
 def generate_image(character: str, font_file: str, background_image: Optional[Image.Image], party_mode: bool = False):
     # TODO: Rotate/morph/skew
     # TODO: Other characters as part of background?
-    if party_mode:
-        font = ImageFont.truetype(font_file, randint(7, 32))
+    # TODO: Furigana to the right and top as noise
+    font_size = randint(12, 32)
+    jitter = int(math.ceil(0.1 * font_size))
+    if party_mode and randint(0, 1) == 0:
+        font = ImageFont.truetype(font_file, font_size)
 
         bg_left = randint(0, background_image.width - 10)
         bg_right = randint(bg_left + 5, background_image.width)
@@ -76,18 +80,30 @@ def generate_image(character: str, font_file: str, background_image: Optional[Im
         bg_bottom = randint(bg_top + 5, background_image.height)
 
         left, top, right, bottom = font.getbbox(character, anchor='lt', language='ja')
+        if right == 0 or bottom == 0:
+            # SawarabiMincho is missing a bunch of characters
+            return None
+
+        size = (right + randint(0, jitter), bottom + randint(0, jitter))
         image = background_image.resize(
-            (right, bottom), resample=PIL.Image.NEAREST, box=(bg_left, bg_top, bg_right, bg_bottom)
+            size, resample=PIL.Image.NEAREST,
+            box=(bg_left, bg_top, bg_right, bg_bottom)
         )
         drawing = ImageDraw.Draw(image)
-        drawing.text((0, 0), character, font=font, fill=random_color(), anchor='lt', language='ja')
+        drawing.text((randint(-int(jitter / 2), int(jitter)), randint(-int(jitter / 2), int(jitter))), character,
+                     font=font,
+                     fill=random_color(), anchor='lt',
+                     language='ja')
         return image.resize((32, 32), resample=PIL.Image.NEAREST)
     else:
-        font = ImageFont.truetype(font_file, randint(7, 32))
+        font = ImageFont.truetype(font_file, font_size)
         left, top, right, bottom = font.getbbox(character, anchor='lt', language='ja')
-        image = Image.new('RGB', (right, bottom), color=random_color())
+        font_color, bg_color = random.choice([[random_black_color(), random_white_color()], [random_white_color(), random_black_color()]])
+        image = Image.new('RGB', (right + randint(0, jitter), bottom + randint(0, jitter)), color=bg_color)
         drawing = ImageDraw.Draw(image)
-        drawing.text((0, 0), character, font=font, fill=random_color(), anchor='lt', language='ja')
+        drawing.text((randint(-int(jitter / 2), int(jitter)), randint(-int(jitter / 2), int(jitter))), character,
+                     font=font,
+                     fill=font_color, anchor='lt', language='ja')
         return image.resize((32, 32), resample=PIL.Image.NEAREST)
 
 
@@ -133,8 +149,10 @@ class Kanji(IterableDataset):
     def generate_kanji(self):
         character = chr(self.characters()[self.character_index])
         label = self.character_index
-        sample = generate_image(character, random.sample(self.font_files, 1)[0],
-                                random.sample(self.background_images, 1)[0], self.party_mode)
+        sample = None
+        while sample is None:
+            sample = generate_image(character, random.sample(self.font_files, 1)[0],
+                                    random.sample(self.background_images, 1)[0], self.party_mode)
         self.character_index = (self.character_index + 1) % len(self.characters())
         return self.transform(sample), label
 

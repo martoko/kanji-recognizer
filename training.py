@@ -26,9 +26,9 @@ def run(args):
 
     transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
 
-    trainset = kanji.Kanji(args.fonts_folder, args.background_images_folder, party_mode=True, transform=transform)
+    trainset = kanji.Kanji(args.fonts_folder, args.background_images_folder, party_mode=False, transform=transform)
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=128)
-    testset = kanji.Kanji(args.fonts_folder, args.background_images_folder, party_mode=True, transform=transform)
+    testset = kanji.Kanji(args.fonts_folder, args.background_images_folder, party_mode=False, transform=transform)
     testloader = torch.utils.data.DataLoader(testset, batch_size=128)
 
     # # get some random training images
@@ -48,7 +48,7 @@ def run(args):
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=1e-3)
 
-    epoch_length = 100
+    epoch_length = 200
     running_loss = 0.0
     for i, data in enumerate(trainloader, 0):
         # get the inputs; datasets is a list of [inputs, labels]
@@ -70,8 +70,9 @@ def run(args):
         if i % epoch_length == (epoch_length - 1):  # print every 20 mini-batches
             print(f'[{i + 1:5d}] loss: {running_loss / epoch_length:.3f}')
             running_loss = 0.0
+            torch.save(model.state_dict(), PATH)
 
-        if i >= 1000:
+        if i >= 1000000:
             break
 
     print('Finished Training')

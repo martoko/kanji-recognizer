@@ -1,5 +1,6 @@
 import argparse
 import os
+import time
 
 import PIL
 import matplotlib.pyplot as plt
@@ -54,7 +55,7 @@ def run(args):
     criterion = nn.MSELoss()
     optimizer = optim.Adam(model.parameters(), lr=1e-3)
 
-    epoch_length = 10
+    epoch_length = 100
     running_loss = 0.0
     for i, data in enumerate(trainloader, 0):
         # get the inputs; datasets is a list of [inputs, labels]
@@ -76,6 +77,7 @@ def run(args):
         if i % epoch_length == (epoch_length - 1):  # print every 20 mini-batches
             print(f'[{i + 1:5d}] loss: {running_loss / epoch_length:.5f}')
             running_loss = 0.0
+            torch.save(model.state_dict(), PATH)
 
         if i >= 1000:
             break
@@ -84,6 +86,7 @@ def run(args):
 
     torch.save(model.state_dict(), PATH)
 
+    begin = time.time()
     correct = 0
     total = 0
     with torch.no_grad():
@@ -95,12 +98,14 @@ def run(args):
             outputs = model(images)
             predicted = outputs.data
             total += labels.size(0)
-            correct += ((predicted * 32).int() == labels.int()).sum().item()
+            correct += (((predicted * 32).int() == labels.int()).sum() / 4).item()
 
             if total >= 10000:
                 break
+    end = time.time()
 
     print('Accuracy of the network on the 10000 test images: %d %%' % (100 * correct / total))
+    print(f'Average processing time {(end - begin) / total:10f} seconds')
 
     dataiter = iter(trainloader)
     images, labels = dataiter.next()
@@ -108,6 +113,9 @@ def run(args):
     labels: Tensor = labels.to(device)
 
     outputs = model(images)
+
+    images = images.cpu()
+    labels = labels.cpu()
 
     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
 
@@ -117,7 +125,22 @@ def run(args):
     # ndarr = grid.mul(255).add_(0.5).clamp_(0, 255).permute(1, 2, 0).to('cpu', torch.uint8).numpy()
     fig, axes = pyplot.subplots(nrows=2, ncols=5)
 
-    for i in range(5):
+    for i in range(0, 5):
+        im = Image.fromarray(np.transpose(((images[i] / 2 + 0.5).numpy() * 255).astype(np.uint8), (1, 2, 0)))
+        drawing = ImageDraw.Draw(im)
+        drawing.rectangle(list(labels[i].cpu().detach().numpy()), outline='red')
+        axes[0, i].axis('off')
+        axes[0, i].imshow(im)
+
+        im = Image.fromarray(np.transpose(((images[i] / 2 + 0.5).numpy() * 255).astype(np.uint8), (1, 2, 0)))
+        drawing = ImageDraw.Draw(im)
+        drawing.rectangle(list((outputs[i] * 32).cpu().detach().numpy()), outline='red')
+        axes[1, i].axis('off')
+        axes[1, i].imshow(im)
+    fig.show()
+
+    fig, axes = pyplot.subplots(nrows=2, ncols=5)
+    for i in range(0, 5):
         im = Image.fromarray(np.transpose(((images[i] / 2 + 0.5).numpy() * 255).astype(np.uint8), (1, 2, 0)))
         drawing = ImageDraw.Draw(im)
         drawing.rectangle(list(labels[i].cpu().detach().numpy()), outline='red')
