@@ -1,20 +1,23 @@
-import glob
-import os
-import random
 from itertools import chain
-from random import randint
-from typing import Iterator, Optional
 
-import PIL
-import torchvision
-from PIL import ImageFont, Image, ImageFile, ImageDraw
-from matplotlib import pyplot
-from torch.utils.data import IterableDataset
-from torch.utils.data.dataset import T_co
 
-ImageFile.LOAD_TRUNCATED_IMAGES = True
+def characters(ranges):
+    return [chr(x) for x in list(chain(*[range(begin, end) for begin, end in ranges]))]
 
-# hiragana = range(0x3041, 0x3096)
+
+hiragana = characters([[0x3041, 0x3096]])
+simple_hiragana = "あいうえおかきくけこがぎぐげごさしすせそざじずぜぞたちつてとだぢづでどな" \
+                  "にぬねのはひふへほばびぶべぼぱぴぷぺぽまみむめもやゆよらりるれろわゐゑを"
+katakana_full_width = characters([[0x30A0, 0x30FF]])
+kanji = characters([[0x3400, 0x4DB5], [0x4E00, 0x9FCB], [0xF900, 0xFA6A]])
+kanji_radicals = characters([[0x2E80, 0x2FD5]])
+half_width_katakana_and_punctuation = characters([[0xFF5F, 0xFF9F]])
+symbols_and_Punctuation = characters([[0x3000, 0x303F]])
+misc_symbols_and_characters = characters([[0x31F0, 0x31FF], [0x3220, 0x3243], [0x3280, 0x337F]])
+alphanumeric_and_punctuation = characters([[0xFF01, 0xFF5E]])
+all_characters = hiragana + katakana_full_width + kanji + kanji_radicals + \
+                 half_width_katakana_and_punctuation + symbols_and_Punctuation + \
+                 misc_symbols_and_characters + alphanumeric_and_punctuation
 
 jouyou_kanji = list(
     "一九七二人入八力十下三千上口土夕大女子小山川五天中六円手文日月木水火犬王正出本右四左玉生田白目石立百年休先名字早気竹糸耳虫"
@@ -35,115 +38,20 @@ jouyou_kanji = list(
     "陛骨域密捨推探済異盛視窓翌脳著訪訳欲郷郵閉頂就善尊割創勤裁揮敬晩棒痛筋策衆装補詞貴裏傷暖源聖盟絹署腹蒸幕誠賃疑層模穀磁暮誤"
     "誌認閣障劇権潮熟蔵諸誕論遺奮憲操樹激糖縦鋼厳優縮覧簡臨難臓警"
 )
-kanji = [ord(x) for x in jouyou_kanji]
 
+if __name__ == "__main__":
+    print("常用漢字")
+    print(jouyou_kanji[:10])
+    print()
 
-# hiragana = [[0x3041, 0x3096]]
-# katakana_full_width = [[0x30A0, 0x30FF]]
-# kanji = [[0x3400, 0x4DB5], [0x4E00, 0x9FCB], [0xF900, 0xFA6A]]
-# kanji_radicals = [[0x2E80, 0x2FD5]]
-# half_width_katakana_and_punctuation = [[0xFF5F, 0xFF9F]]
-# symbols_and_Punctuation = [[0x3000, 0x303F]]
-# misc_symbols_and_characters = [[0x31F0, 0x31FF], [0x3220, 0x3243], [0x3280, 0x337F]]
-# alphanumeric_and_punctuation = [[0xFF01, 0xFF5E]]
-# all_character_ranges = hiragana + katakana_full_width + kanji + kanji_radicals + \
-#                        half_width_katakana_and_punctuation + symbols_and_Punctuation + \
-#                        misc_symbols_and_characters + alphanumeric_and_punctuation
-# all_characters = list(chain.from_iterable([range(begin, end) for begin, end in all_character_ranges]))
+    print("平仮名")
+    print(hiragana[:10])
+    print()
 
+    print("漢字")
+    print(kanji[:10])
+    print()
 
-def random_color():
-    return randint(0, 255), randint(0, 255), randint(0, 255)
-
-
-def random_white_color():
-    return randint(230, 255), randint(230, 255), randint(230, 255)
-
-
-def random_black_color():
-    return randint(0, 25), randint(0, 25), randint(0, 25)
-
-
-def generate_image(character: str, font_file: str, background_image: Optional[Image.Image], party_mode: bool = False):
-    # TODO: Rotate/morph/skew
-    # TODO: Other characters as part of background?
-    if party_mode:
-        font = ImageFont.truetype(font_file, randint(7, 32))
-
-        bg_left = randint(0, background_image.width - 10)
-        bg_right = randint(bg_left + 5, background_image.width)
-        bg_top = randint(0, background_image.height - 10)
-        bg_bottom = randint(bg_top + 5, background_image.height)
-
-        left, top, right, bottom = font.getbbox(character, anchor='lt', language='ja')
-        image = background_image.resize(
-            (right, bottom), resample=PIL.Image.NEAREST, box=(bg_left, bg_top, bg_right, bg_bottom)
-        )
-        drawing = ImageDraw.Draw(image)
-        drawing.text((0, 0), character, font=font, fill=random_color(), anchor='lt', language='ja')
-        return image.resize((32, 32), resample=PIL.Image.NEAREST)
-    else:
-        font = ImageFont.truetype(font_file, randint(7, 32))
-        left, top, right, bottom = font.getbbox(character, anchor='lt', language='ja')
-        image = Image.new('RGB', (right, bottom), color=random_color())
-        drawing = ImageDraw.Draw(image)
-        drawing.text((0, 0), character, font=font, fill=random_color(), anchor='lt', language='ja')
-        return image.resize((32, 32), resample=PIL.Image.NEAREST)
-
-
-if __name__ == '__main__':
-    font_files = glob.glob(os.path.join('fonts', '**/*.ttf'), recursive=True) + \
-                 glob.glob(os.path.join('fonts', '**/*.ttc'), recursive=True)
-    background_images = [
-        Image.open(os.path.join('background-images', name))
-        for name in os.listdir('background-images')
-        if os.path.isfile(os.path.join('background-images', name))
-    ]
-
-
-    def sample(party=False):
-        character = chr(random.sample(kanji, k=1)[0])
-        return generate_image(character, random.sample(font_files, 1)[0], random.sample(background_images, 1)[0], party)
-
-
-    images = [[sample(j == 1) for i in range(10)] for j in range(2)]
-    fig, axes = pyplot.subplots(nrows=2, ncols=10)
-    for axes, images in zip(axes, images):
-        for axis, image in zip(axes, images):
-            axis.axis('off')
-            axis.imshow(image)
-    fig.subplots_adjust(0, 0, 1, 1)
-    fig.show()
-
-
-class Kanji(IterableDataset):
-    def __init__(self, fonts_folder: str, background_image_folder: str, transform, party_mode: bool = False):
-        super(Kanji).__init__()
-        self.party_mode = party_mode
-        self.font_files = glob.glob(os.path.join(fonts_folder, '**/*.ttf'), recursive=True) + \
-                          glob.glob(os.path.join(fonts_folder, '**/*.ttc'), recursive=True)
-        self.background_images = [
-            Image.open(os.path.join(background_image_folder, name))
-            for name in os.listdir(background_image_folder)
-            if os.path.isfile(os.path.join(background_image_folder, name))
-        ]
-        self.transform = transform
-        self.character_index = 0
-
-    def generate_kanji(self):
-        character = chr(self.characters()[self.character_index])
-        label = self.character_index
-        sample = generate_image(character, random.sample(self.font_files, 1)[0],
-                                random.sample(self.background_images, 1)[0], self.party_mode)
-        self.character_index = (self.character_index + 1) % len(self.characters())
-        return self.transform(sample), label
-
-    def characters(self):
-        return kanji
-
-    def __iter__(self) -> Iterator[T_co]:
-        while True:
-            yield self.generate_kanji()
-
-    def __getitem__(self, index) -> T_co:
-        return self.generate_kanji()
+    print("symbols_and_Punctuation")
+    print(symbols_and_Punctuation[:20])
+    print()
