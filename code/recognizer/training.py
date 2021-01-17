@@ -3,6 +3,9 @@ import math
 import os
 import pathlib
 import time
+import random
+
+import PIL
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
@@ -55,13 +58,14 @@ def run(args):
     train_transform = transforms.Compose([
         transforms.RandomCrop((32, 32)),
         transforms.ColorJitter(*args.color_jitter),
+        transforms.Lambda(lambda img: PIL.ImageOps.invert(img) if random.random() > 0.5 else img),
         transforms.ToTensor(),
         GaussianNoise(*args.noise),
         transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
     ])
 
     test_transform = transforms.Compose([
-        transforms.Resize((32, 32)),
+        transforms.Resize(size=(32, 32), interpolation=PIL.Image.NEAREST),
         transforms.ToTensor(),
         transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
     ])
@@ -105,7 +109,7 @@ def run(args):
 
                 if total >= len(testset.characters):
                     break
-            wandb.log({"failure_cases": [wandb.Image(
+            wandb.log({"train/failure_cases": [wandb.Image(
                 case["image"],
                 caption=f"Prediction: {case['prediction']} Truth: {case['label']}"
             ) for case in sorted(failure_cases, key=lambda item: item['confidence'])[:8]]})
@@ -148,7 +152,7 @@ def run(args):
                 "validation/examples": [wandb.Image(
                     case["image"],
                     caption=f"Prediction: {case['prediction']} Truth: {case['label']}"
-                ) for case in test_results],
+                ) for case in test_results[:20]],
                 "validation/failure_cases": [wandb.Image(
                     case["image"],
                     caption=f"Prediction: {case['prediction']} Truth: {case['label']}"
@@ -161,7 +165,7 @@ def run(args):
 
     running_loss = 0.0
     time_of_last_report = time.time()
-    log_frequency = 10  # report every X seconds
+    log_frequency = 20  # report every X seconds
     batches_since_last_report = 0
     begin_training_time = time.time()
     for current_batch, data in enumerate(trainloader, 1):
