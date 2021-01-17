@@ -140,3 +140,6 @@ cython_debug/
 /data/background-images
 /data/generated
 /data/models
+
+# wandb log files
+wandb

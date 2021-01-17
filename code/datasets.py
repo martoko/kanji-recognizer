@@ -1,16 +1,15 @@
 import glob
 import os
 import random
+import pathlib
+import shutil
 from random import randint
 from typing import *
-import numpy as np
-
 import PIL
-from PIL import ImageFont, Image, ImageFile, ImageDraw
-from matplotlib import pyplot
+import numpy as np
+from PIL import ImageFont, Image, ImageFile, ImageDraw, ImageStat
 from torch.utils.data import IterableDataset
 from torch.utils.data.dataset import T_co
-
 import kanji
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
@@ -50,7 +49,7 @@ class BoxerDataset(IterableDataset):
         self.character_index = 0
         self.characters = kanji.jouyou_kanji
 
-    def generate(self, visualize_label=False):
+    def generate(self):
         character = self.characters[self.character_index]
         font_path = random.choice(self.font_files)
         background = random.choice(self.background_images)
@@ -91,6 +90,12 @@ class BoxerDataset(IterableDataset):
 
 
 class RecognizerDataset(IterableDataset):
+    # TODO: Rotate/morph/skew
+    # TODO: Other characters as part of background?
+    # TODO: Add a small random padding/cropping to be more resistant to faulty cropping
+    # TODO: Add random lines to image, also in same color as text
+    # TODO: Legible text is more common than completely illegible text
+    # TODO: Random noise/color noise
     def __init__(self, fonts_folder: str, background_image_folder: str, transform=None):
         super(RecognizerDataset).__init__()
         self.font_files = font_paths(fonts_folder)
@@ -98,8 +103,9 @@ class RecognizerDataset(IterableDataset):
         self.transform = transform
         self.character_index = 0
         self.characters = kanji.jouyou_kanji
+        self.id = 'recognizer-1'
 
-    def generate(self, visualize_label=False):
+    def generate(self):
         character = self.characters[self.character_index]
         label = self.character_index
         font_path = random.choice(self.font_files)
@@ -116,6 +122,8 @@ class RecognizerDataset(IterableDataset):
         # TODO: Jitter
 
         left, top, right, bottom = font.getbbox(character, anchor='lt', language='ja')
+        if right == 0 or bottom == 0:
+            print(f"{character} is missing from {font}")
         sample = background.resize(
             (right, bottom), resample=PIL.Image.NEAREST, box=(bg_left, bg_top, bg_right, bg_bottom)
         )
@@ -136,6 +144,7 @@ class RecognizerDataset(IterableDataset):
     def __getitem__(self, index) -> T_co:
         return self.generate()
 
+
 class HiraganaDataset(IterableDataset):
     def __init__(self, fonts_folder: str, background_image_folder: str, transform=None):
         super(HiraganaDataset).__init__()
@@ -145,7 +154,7 @@ class HiraganaDataset(IterableDataset):
         self.character_index = 0
         self.characters = kanji.simple_hiragana
 
-    def generate(self, visualize_label=False):
+    def generate(self):
         character = self.characters[self.character_index]
         label = self.character_index
         font_path = random.choice(self.font_files)
@@ -172,28 +181,33 @@ class HiraganaDataset(IterableDataset):
     def __getitem__(self, index) -> T_co:
         return self.generate()
 
+# TODO: Shuffle character order
 if __name__ == '__main__':
-    def generate_grid(dataset, rows=15, columns=5):
-        images = [[dataset.generate(True)[0] for i in range(columns)] for j in range(rows)]
-        fig, axes = pyplot.subplots(nrows=rows, ncols=columns)
-        for axes, images in zip(axes, images):
-            for axis, image in zip(axes, images):
-                axis.axis('off')
-                axis.imshow(image)
-        fig.subplots_adjust(0, 0, 1, 1)
-        fig.show()
+    def generate(dataset, count=50):
+        if pathlib.Path(f"data/generated/{dataset.id}").exists():
+            shutil.rmtree(f"data/generated/{dataset.id}")
+        pathlib.Path(f"data/generated/{dataset.id}").mkdir(parents=True, exist_ok=True)
+        iterator = iter(dataset)
+        for i in range(count):
+            sample, label = next(iterator)
+            sample.save(f"data/generated/{dataset.id}/{i}.png")
 
-    # generate_grid(RecognizerDataset("data/fonts", "data/background-images"))
-    # generate_grid(BoxerDataset("data/fonts", "data/background-images"))
-    generate_grid(HiraganaDataset("data/fonts", "data/background-images"))
 
-    dataset = HiraganaDataset("data/fonts", "data/background-images")
-    iterator = iter(dataset)
-    labels = []
-    characters = []
-    for i in range(5000):
-        sample, label = next(iterator)
-        labels += [label]
-        characters += [dataset.characters[label]]
-        sample.save(f"data/generated/hiragana/{i}.png")
-    np.save(f"data/generated/hiragana.npy", np.array(labels, dtype=np.int64))
+    def normalization_data(dataset, name, count=1000):
+        pixels = np.array([])
+        iterator = iter(dataset)
+        for i in range(count):
+            sample, label = next(iterator)
+            pixels = np.append(pixels, np.array(sample) / 255)
+            if i % (round(count / 100)) == 0:
+                print(f"{round(i / count * 100)}% {i}/{count}\r", end='')
+        print(f"{name}: mean {pixels.mean()}, std: {pixels.std()}")
+
+
+    normalization_data(RecognizerDataset("data/fonts", "data/background-images"), "recognizer")
+    # normalization_data(BoxerDataset("data/fonts", "data/background-images"), "boxer")
+    # normalization_data(HiraganaDataset("data/fonts", "data/background-images"), "hiragana")
+
+    generate(RecognizerDataset("data/fonts", "data/background-images"))
+    # generate(BoxerDataset("data/fonts", "data/background-images"), "boxer")
+    # generate(HiraganaDataset("data/fonts", "data/background-images"), "hiragana")

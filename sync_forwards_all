@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+rsync -avz --delete --exclude-from=.gitignore --exclude=.git . martoko@10.0.0.94:/home/martoko/Code/kanji-recognizer
+while inotifywait -r -e modify,create,delete,move .; do
+    rsync -avz --delete --exclude-from=.gitignore --exclude=.git . martoko@10.0.0.94:/home/martoko/Code/kanji-recognizer
+done
+

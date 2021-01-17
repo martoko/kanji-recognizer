@@ -11,8 +11,8 @@ from PIL import Image, ImageDraw
 from matplotlib import pyplot
 from torch import Tensor
 
-import datasets
-from boxer.box_model import KanjiBoxer
+from code import datasets
+from code.boxer.box_model import KanjiBoxer
 
 
 def imshow(img):
