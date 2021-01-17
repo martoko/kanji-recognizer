@@ -36,6 +36,8 @@ def run(args):
             return kanji.frequent_kanji
         if name == "jouyou_kanji_and_simple_hiragana":
             return kanji.jouyou_kanji_and_simple_hiragana
+        if name == "simple_hiragana":
+            return kanji.simple_hiragana
         raise Exception(f"Unknown character set {name}")
 
     characters = character_set_from_name(args.character_set)
