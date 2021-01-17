@@ -17,7 +17,8 @@ ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 def font_paths(folder):
     return glob.glob(os.path.join(folder, '**/*.ttf'), recursive=True) + \
-           glob.glob(os.path.join(folder, '**/*.ttc'), recursive=True)
+           glob.glob(os.path.join(folder, '**/*.ttc'), recursive=True) + \
+           glob.glob(os.path.join(folder, '**/*.otf'), recursive=True)
 
 
 def background_images(folder):
@@ -103,6 +104,7 @@ class RecognizerGeneratedDataset(IterableDataset):
         self.character_index = 0
         self.characters = characters
         self.id = 'recognizer-2'
+        self.missing_chars = []
 
     def generate(self):
         character = self.characters[self.character_index]
@@ -112,8 +114,11 @@ class RecognizerGeneratedDataset(IterableDataset):
         font = ImageFont.truetype(font_path, font_size)
         left, top, right, bottom = font.getbbox(character, anchor='lt', language='ja')
         if right == 0 or bottom == 0:
-            print(f"{character} is missing from {font}")
-            exit(-1)
+            if character not in self.missing_chars:
+                self.missing_chars += [character]
+                print(f"{len(self.missing_chars)}/{len(self.characters)} characters are missing from {font_path}")
+                self.character_index = (self.character_index + 1) % len(self.characters)
+            return self.generate()
 
         sample = Image.new('RGB', (right + 8, bottom + 8), color=random_white_color())
         drawing = ImageDraw.Draw(sample)
