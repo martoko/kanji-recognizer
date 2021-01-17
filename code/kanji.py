@@ -8,6 +8,7 @@ def characters(ranges):
 hiragana = characters([[0x3041, 0x3096]])
 simple_hiragana = list("あいうえおかきくけこがぎぐげごさしすせそざじずぜぞたちつてとだぢづでどな"
                        "にぬねのはひふへほばびぶべぼぱぴぷぺぽまみむめもやゆよらりるれろわゐゑを")
+simpler_hiragana = list("あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわを")
 katakana_full_width = characters([[0x30A0, 0x30FF]])
 kanji = characters([[0x3400, 0x4DB5], [0x4E00, 0x9FCB], [0xF900, 0xFA6A]])
 kanji_radicals = characters([[0x2E80, 0x2FD5]])
