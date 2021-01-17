@@ -95,7 +95,6 @@ class RecognizerGeneratedDataset(IterableDataset):
     # TODO: Add a small random padding/cropping to be more resistant to faulty cropping
     # TODO: Add random lines to image, also in same color as text
     # TODO: Legible text is more common than completely illegible text
-    # TODO: Random noise/color noise
     def __init__(self, fonts_folder: str, background_image_folder: str, transform=None):
         super(RecognizerGeneratedDataset).__init__()
         self.font_files = font_paths(fonts_folder)
@@ -103,33 +102,23 @@ class RecognizerGeneratedDataset(IterableDataset):
         self.transform = transform
         self.character_index = 0
         self.characters = kanji.jouyou_kanji
-        self.id = 'recognizer-1'
+        self.id = 'recognizer-2'
 
     def generate(self):
         character = self.characters[self.character_index]
         label = self.character_index
         font_path = random.choice(self.font_files)
-        background = random.choice(self.background_images)
-        background = Image.new('RGB', (32, 32), color=random_white_color())
-        font_size = randint(12, 16)
+        font_size = randint(12, 22)
         font = ImageFont.truetype(font_path, font_size)
-
-        bg_left = randint(0, background.width - 10)
-        bg_right = randint(bg_left + 5, background.width)
-        bg_top = randint(0, background.height - 10)
-        bg_bottom = randint(bg_top + 5, background.height)
-
-        # TODO: Jitter
-
         left, top, right, bottom = font.getbbox(character, anchor='lt', language='ja')
         if right == 0 or bottom == 0:
             print(f"{character} is missing from {font}")
-        sample = background.resize(
-            (right, bottom), resample=PIL.Image.NEAREST, box=(bg_left, bg_top, bg_right, bg_bottom)
-        )
+            exit(-1)
+
+        sample = Image.new('RGB', (right + 8, bottom + 8), color=random_white_color())
         drawing = ImageDraw.Draw(sample)
-        drawing.text((0, 0), character, font=font, fill=random_color(), anchor='lt', language='ja')
-        sample = sample.resize((32, 32), resample=PIL.Image.NEAREST)
+        drawing.text((4, 4), character, font=font, fill=random_color(), anchor='lt', language='ja')
+        sample = sample.resize((40, 40), resample=PIL.Image.NEAREST)
 
         self.character_index = (self.character_index + 1) % len(self.characters)
         if self.transform is None:
@@ -152,7 +141,7 @@ class RecognizerTestDataset(Dataset):
         self.characters = kanji.jouyou_kanji
         self.transform = transform
         paths = glob.glob(os.path.join(path, '**/*.png'), recursive=True)
-        characters = [os.path.splitext(os.path.basename(path))[0] for path in paths]
+        characters = [os.path.dirname(path) for path in paths]
         self.samples = [(path, character) for path, character
                         in zip(paths, characters)
                         if character in self.characters]
@@ -215,7 +204,7 @@ class HiraganaDataset(IterableDataset):
 
 # TODO: Shuffle character order
 if __name__ == '__main__':
-    def generate(dataset, count=50):
+    def generate(dataset, count=200):
         if pathlib.Path(f"data/generated/{dataset.id}").exists():
             shutil.rmtree(f"data/generated/{dataset.id}")
         pathlib.Path(f"data/generated/{dataset.id}").mkdir(parents=True, exist_ok=True)
@@ -236,7 +225,7 @@ if __name__ == '__main__':
         print(f"{name}: mean {pixels.mean()}, std: {pixels.std()}")
 
 
-    normalization_data(RecognizerGeneratedDataset("data/fonts", "data/background-images"), "recognizer")
+    # normalization_data(RecognizerGeneratedDataset("data/fonts", "data/background-images"), "recognizer")
     # normalization_data(BoxerDataset("data/fonts", "data/background-images"), "boxer")
     # normalization_data(HiraganaDataset("data/fonts", "data/background-images"), "hiragana")
 

@@ -11,7 +11,8 @@ import torch.optim as optim
 import torchvision
 import torchvision.transforms as transforms
 import wandb
-import torchvision.transforms.functional as F
+
+import kanji
 from datasets import RecognizerGeneratedDataset, RecognizerTestDataset
 from model import KanjiRecognizer
 
@@ -42,17 +43,23 @@ def run(args):
         def __repr__(self):
             return self.__class__.__name__ + '(mean={0}, std={1})'.format(self.mean, self.std)
 
-    transform = transforms.Compose([
-        transforms.Resize((32, 32)),
+    train_transform = transforms.Compose([
+        transforms.RandomCrop((32, 32)),
         transforms.ColorJitter(*args.color_jitter),
         transforms.ToTensor(),
         GaussianNoise(*args.noise),
         transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
     ])
 
-    trainset = RecognizerGeneratedDataset(args.fonts_folder, args.background_images_folder, transform=transform)
+    test_transform = transforms.Compose([
+        transforms.Resize((32, 32)),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
+    ])
+
+    trainset = RecognizerGeneratedDataset(args.fonts_folder, args.background_images_folder, transform=train_transform)
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=args.batch_size)
-    testset = RecognizerTestDataset(args.test_folder, transform=transform)
+    testset = RecognizerTestDataset(args.test_folder, transform=test_transform)
     testloader = torch.utils.data.DataLoader(testset, batch_size=args.batch_size)
     wandb.config.update({"dataset": trainset.id})
 
@@ -191,7 +198,7 @@ def run(args):
         pathlib.Path(args.output_path).parent.mkdir(parents=True, exist_ok=True)
         torch.save(model.state_dict(), args.output_path)
 
-    print("Accuracy of the network: %d %%" % train_accuracy())
+    print("Accuracy of the network: %d %%" % evaluate_train())
 
     def log_examples(count=10):
         with torch.no_grad():
@@ -252,6 +259,12 @@ def run(args):
 
 
 if __name__ == "__main__":
+    def to_character_set(name):
+        if name == "jouyou_kanji":
+            return kanji.jouyou_kanji
+        if name == "jouyou_kanji_and_simple_hiragana":
+            return kanji.jouyou_kanji_and_simple_hiragana
+
     parser = argparse.ArgumentParser(description="Train a model to recognize kanji.")
     parser.add_argument("-o", "--output-path", type=str, default="data/models/recognizer.pt",
                         help="save model to this path")
@@ -273,4 +286,6 @@ if __name__ == "__main__":
                         help="brightness, contrast, saturation, hue passed onto the color jitter transform (default: 0.1, 0.1, 0.1, 0.1)")
     parser.add_argument("-n", "--noise", nargs='+', type=float, default=[0, 0.0001],
                         help="mean, std of gaussian noise transform (default: 0, 0.0001)")
+    parser.add_argument("-c", "--character-set", type=to_character_set, default="jouyou_kanji_and_simple_hiragana",
+                        help="name of characters to use (default: jouyou_kanji_and_simple_hiragana)")
     run(parser.parse_args())

@@ -6,8 +6,8 @@ def characters(ranges):
 
 
 hiragana = characters([[0x3041, 0x3096]])
-simple_hiragana = "あいうえおかきくけこがぎぐげごさしすせそざじずぜぞたちつてとだぢづでどな" \
-                  "にぬねのはひふへほばびぶべぼぱぴぷぺぽまみむめもやゆよらりるれろわゐゑを"
+simple_hiragana = list("あいうえおかきくけこがぎぐげごさしすせそざじずぜぞたちつてとだぢづでどな"
+                       "にぬねのはひふへほばびぶべぼぱぴぷぺぽまみむめもやゆよらりるれろわゐゑを")
 katakana_full_width = characters([[0x30A0, 0x30FF]])
 kanji = characters([[0x3400, 0x4DB5], [0x4E00, 0x9FCB], [0xF900, 0xFA6A]])
 kanji_radicals = characters([[0x2E80, 0x2FD5]])
@@ -38,6 +38,8 @@ jouyou_kanji = list(
     "陛骨域密捨推探済異盛視窓翌脳著訪訳欲郷郵閉頂就善尊割創勤裁揮敬晩棒痛筋策衆装補詞貴裏傷暖源聖盟絹署腹蒸幕誠賃疑層模穀磁暮誤"
     "誌認閣障劇権潮熟蔵諸誕論遺奮憲操樹激糖縦鋼厳優縮覧簡臨難臓警"
 )
+
+jouyou_kanji_and_simple_hiragana = jouyou_kanji + simple_hiragana
 
 if __name__ == "__main__":
     print("常用漢字")
