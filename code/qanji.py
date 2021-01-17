@@ -1,6 +1,9 @@
 import io
+import math
 import sys
 from typing import *
+
+import cv2
 import torch
 from PIL import Image, ImageDraw
 from PIL.Image import NEAREST
@@ -15,9 +18,10 @@ from PySide6.QtCore import Slot, Qt, QEvent, QRect, QByteArray, QBuffer, QIODevi
 from matplotlib import pyplot
 from torchvision.transforms import transforms
 
-from box_model import KanjiBoxer
+# from box_model import KanjiBoxer
 import kanji
-from model import KanjiRecognizer
+from craft import CRAFT, copyStateDict, test_net
+from recognizer.model import KanjiRecognizer
 
 
 class Qanji(QWidget):
@@ -26,11 +30,18 @@ class Qanji(QWidget):
 
         # This hangs, show nice loading bar
         # self.ocr_reader = easyocr.Reader(['ja'], gpu=False)
-        self.boxer = KanjiBoxer(input_dimensions=32)
-        self.boxer.load_state_dict(torch.load('./box_saved_model.pt'))
+        # self.boxer = KanjiBoxer(input_dimensions=32)
+        # self.boxer.load_state_dict(torch.load('./box_saved_model.pt'))
 
-        self.recog = KanjiRecognizer(input_dimensions=32, output_dimensions=len(kanji.Kanji.characters()))
-        self.recog.load_state_dict(torch.load('./saved_model.pt'))
+        self.characters = kanji.jouyou_kanji_and_simple_hiragana
+        self.recog = KanjiRecognizer(output_dimensions=len(self.characters))
+        self.recog.load_state_dict(torch.load('/home/martoko/saved_model.pt'))
+        self.recog.eval()
+
+        self.craft = CRAFT()
+        self.craft.load_state_dict(
+            copyStateDict(torch.load("/home/martoko/Code/CRAFT-pytorch/weights/craft_mlt_25k.pth", map_location='cpu')))
+        self.craft.eval()
 
         self.setWindowTitle("Qanji")
 
@@ -85,21 +96,55 @@ class Qanji(QWidget):
             )
         )
         pilimg = self.pixmap_to_pil(scaled)
-        box = self.boxer(tensors.reshape(-1, 3, 32, 32))
-        box = (box.detach().numpy() * 32)[0]
-        box[0] -= 1
-        box[1] -= 1
-        box[2] += 1
-        box[3] += 1
-        d = ImageDraw.Draw(pilimg)
-        d.rectangle(box, outline='red')
-        pyplot.imshow(pilimg)
-        pyplot.show()
 
-        pilimg = self.pixmap_to_pil(scaled)
-        pilimg = pilimg.resize((32, 32), box=list(box), resample=NEAREST)
-        pyplot.imshow(pilimg)
-        pyplot.show()
+        # load data
+        image = pilimg
+        image = np.array(image)
+
+        bboxes, polys, score_text = test_net(self.craft, image, 0.7, 0.4, 0.4, False, False, None)
+        print(bboxes)
+
+        if len(bboxes) > 0:
+            best_distance = 64
+            best = None
+            for box in bboxes:
+                centroid = [
+                    (box[0][0] + box[1][0] + box[2][0] + box[3][0]) / 4,
+                    (box[0][1] + box[1][1] + box[2][1] + box[3][1]) / 4
+                ]
+                distance = math.sqrt(
+                    math.pow(centroid[0] - 32, 2) +
+                    math.pow(centroid[1] - 32, 2)
+                )
+                if distance < best_distance:
+                    best_distance = distance
+                    best = box
+
+            box = best
+            print(len(bboxes))
+            box = [
+                box[0][0],  # left
+                box[0][1],  # top
+                box[2][0],  # right
+                box[2][1],  # bottom
+            ]
+            pilimg = pilimg.resize((32, 32), box=list(box), resample=NEAREST)
+
+        # box = self.boxer(tensors.reshape(-1, 3, 32, 32))
+        # box = (box.detach().numpy() * 32)[0]
+        # box[0] -= 1
+        # box[1] -= 1
+        # box[2] += 1
+        # box[3] += 1
+        # d = ImageDraw.Draw(pilimg)
+        # d.rectangle(box, outline='red')
+        # pyplot.imshow(pilimg)
+        # pyplot.show()
+
+        # pilimg = self.pixmap_to_pil(scaled)
+        # pilimg = pilimg.resize((32, 32), box=list(box), resample=NEAREST)
+        # pyplot.imshow(pilimg)
+        # pyplot.show()
         tensors = transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))(
             transforms.ToTensor()(
                 # np_array
@@ -108,12 +153,23 @@ class Qanji(QWidget):
         )
 
         outputs = self.recog(tensors.reshape(-1, 3, 32, 32))
+        best_confidence, best_indices = torch.sort(outputs, 1, descending=True)
+        # print(best_confidence)
+        # print(best_confidence[0][0])
+        # print(best_indices[0][0])
+        # print(self.characters[best_indices[0][0]])
         _, predicted = torch.max(outputs, 1)
-        ocr = chr(kanji.Kanji.characters()[predicted])
-        print(ocr)
-        self.text.setText(ocr)
+        # ocr = self.characters[predicted]
+        # print(ocr)
+        ocr2 = [self.characters[best_indices[0][i]] for i in range(5)]
+        print(ocr2)
+        self.text.setText(", ".join(ocr2))
 
-        scaled_pixmap = scaled  # .scaled(
+        im = pilimg.convert("RGB")
+        data = im.tobytes("raw", "RGB")
+        qim = QtGui.QImage(data, im.size[0], im.size[1], QtGui.QImage.Format_RGB888)
+        scaled_pixmap = QPixmap.fromImage(qim)
+        # scaled_pixmap = scaled  # .scaled(
         #     self.screenshot_label.size(),
         #     Qt.KeepAspectRatio,
         #     Qt.SmoothTransformation

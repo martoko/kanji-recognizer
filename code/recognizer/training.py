@@ -28,8 +28,12 @@ def run(args):
     device = torch.device("cuda" if cuda_is_available else "cpu")
 
     def character_set_from_name(name):
+        if name == "kanji":
+            return kanji.kanji
         if name == "jouyou_kanji":
             return kanji.jouyou_kanji
+        if name == "frequent_kanji":
+            return kanji.frequent_kanji
         if name == "jouyou_kanji_and_simple_hiragana":
             return kanji.jouyou_kanji_and_simple_hiragana
         raise Exception(f"Unknown character set {name}")
@@ -163,8 +167,7 @@ def run(args):
     optimizer = optim.Adam(model.parameters(), lr=args.learning_rate)
 
     running_loss = 0.0
-    time_of_last_report = time.time()
-    log_frequency = 20  # report every X seconds
+    time_of_last_log = time.time()
     batches_since_last_report = 0
     begin_training_time = time.time()
     for current_batch, data in enumerate(trainloader, 1):
@@ -185,7 +188,7 @@ def run(args):
         # print statistics
         running_loss += loss.item()
         batches_since_last_report += 1
-        if time.time() - time_of_last_report > log_frequency:
+        if time.time() - time_of_last_log > args.log_frequency:
             loss = running_loss / batches_since_last_report
             train_accuracy = evaluate_train()
             validation_accuracy = evaluate_validation()
@@ -210,7 +213,7 @@ def run(args):
             })
             running_loss = 0.0
             batches_since_last_report = 0
-            time_of_last_report = time.time()
+            time_of_last_log = time.time()
 
             if time.time() - begin_training_time > args.training_time * 60:
                 break
@@ -305,6 +308,8 @@ if __name__ == "__main__":
                         help="brightness, contrast, saturation, hue passed onto the color jitter transform (default: 0.1, 0.1, 0.1, 0.1)")
     parser.add_argument("-n", "--noise", nargs='+', type=float, default=[0, 0.0005],
                         help="mean, std of gaussian noise transform (default: 0, 0.0005)")
-    parser.add_argument("-c", "--character-set", type=str, default="jouyou_kanji_and_simple_hiragana",
-                        help="name of characters to use (default: jouyou_kanji_and_simple_hiragana)")
+    parser.add_argument("-c", "--character-set", type=str, default="frequent_kanji",
+                        help="name of characters to use (default: frequent_kanji)")
+    parser.add_argument("-F", "--log-frequency", type=float, default=60,
+                        help="how many seconds between logging (default: 60)")
     run(parser.parse_args())
