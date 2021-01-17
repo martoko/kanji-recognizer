@@ -95,13 +95,14 @@ class RecognizerGeneratedDataset(IterableDataset):
     # TODO: Add a small random padding/cropping to be more resistant to faulty cropping
     # TODO: Add random lines to image, also in same color as text
     # TODO: Legible text is more common than completely illegible text
-    def __init__(self, fonts_folder: str, background_image_folder: str, transform=None):
+    # TODO: Italic
+    def __init__(self, fonts_folder: str, background_image_folder: str, characters=kanji.jouyou_kanji, transform=None):
         super(RecognizerGeneratedDataset).__init__()
         self.font_files = font_paths(fonts_folder)
         self.background_images = background_images(background_image_folder)
         self.transform = transform
         self.character_index = 0
-        self.characters = kanji.jouyou_kanji
+        self.characters = characters
         self.id = 'recognizer-2'
 
     def generate(self):
@@ -135,15 +136,15 @@ class RecognizerGeneratedDataset(IterableDataset):
 
 
 class RecognizerTestDataset(Dataset):
-    def __init__(self, path, transform=None):
+    def __init__(self, path, characters=kanji.jouyou_kanji, transform=None):
         super(RecognizerTestDataset).__init__()
         self.id = 'recognizer-test-1'
-        self.characters = kanji.jouyou_kanji
+        self.characters = characters
         self.transform = transform
-        paths = glob.glob(os.path.join(path, '**/*.png'), recursive=True)
-        characters = [os.path.dirname(path) for path in paths]
+        sample_paths = glob.glob(os.path.join(path, '**/*.png'), recursive=True)
+        label_characters = [os.path.basename(os.path.dirname(path)) for path in sample_paths]
         self.samples = [(path, character) for path, character
-                        in zip(paths, characters)
+                        in zip(sample_paths, label_characters)
                         if character in self.characters]
 
     def __len__(self):

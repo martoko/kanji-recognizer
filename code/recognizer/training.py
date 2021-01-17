@@ -24,6 +24,15 @@ def run(args):
     wandb.init(project="qanji", config=args)
     device = torch.device("cuda" if cuda_is_available else "cpu")
 
+    def character_set_from_name(name):
+        if name == "jouyou_kanji":
+            return kanji.jouyou_kanji
+        if name == "jouyou_kanji_and_simple_hiragana":
+            return kanji.jouyou_kanji_and_simple_hiragana
+        raise Exception(f"Unknown character set {name}")
+
+    characters = character_set_from_name(args.character_set)
+
     def denormalize(img):
         return img / 0.5 + 0.5
 
@@ -57,9 +66,10 @@ def run(args):
         transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
     ])
 
-    trainset = RecognizerGeneratedDataset(args.fonts_folder, args.background_images_folder, transform=train_transform)
+    trainset = RecognizerGeneratedDataset(args.fonts_folder, args.background_images_folder, characters=characters,
+                                          transform=train_transform)
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=args.batch_size)
-    testset = RecognizerTestDataset(args.test_folder, transform=test_transform)
+    testset = RecognizerTestDataset(args.test_folder, characters=characters, transform=test_transform)
     testloader = torch.utils.data.DataLoader(testset, batch_size=args.batch_size)
     wandb.config.update({"dataset": trainset.id})
 
@@ -104,6 +114,7 @@ def run(args):
     def evaluate_validation():
         with torch.no_grad():
             test_results = []
+            failure_cases = []
             correct = 0
             total = 0
             for data in testloader:
@@ -123,6 +134,13 @@ def run(args):
                         "label": testset.characters[label],
                         "confidence": output[label]
                     }]
+                    if prediction != label:
+                        failure_cases += [{
+                            "image": image,
+                            "prediction": testset.characters[prediction],
+                            "label": testset.characters[label],
+                            "confidence": output[label]
+                        }]
 
                 if total >= len(testset.characters):
                     break
@@ -130,7 +148,11 @@ def run(args):
                 "validation/examples": [wandb.Image(
                     case["image"],
                     caption=f"Prediction: {case['prediction']} Truth: {case['label']}"
-                ) for case in test_results]
+                ) for case in test_results],
+                "validation/failure_cases": [wandb.Image(
+                    case["image"],
+                    caption=f"Prediction: {case['prediction']} Truth: {case['label']}"
+                ) for case in sorted(failure_cases, key=lambda item: item['confidence'])[:8]]
             })
             return 100 * correct / total
 
@@ -248,7 +270,7 @@ def run(args):
 
                 if total >= len(testset.characters):
                     break
-            wandb.log({"failure_cases": [wandb.Image(
+            wandb.log({"train/failure_cases": [wandb.Image(
                 case["image"],
                 caption=f"Prediction: {case['prediction']} Truth: {case['label']}"
             ) for case in sorted(failure_cases, key=lambda item: item['confidence'])[:count]]})
@@ -259,12 +281,6 @@ def run(args):
 
 
 if __name__ == "__main__":
-    def to_character_set(name):
-        if name == "jouyou_kanji":
-            return kanji.jouyou_kanji
-        if name == "jouyou_kanji_and_simple_hiragana":
-            return kanji.jouyou_kanji_and_simple_hiragana
-
     parser = argparse.ArgumentParser(description="Train a model to recognize kanji.")
     parser.add_argument("-o", "--output-path", type=str, default="data/models/recognizer.pt",
                         help="save model to this path")
@@ -286,6 +302,6 @@ if __name__ == "__main__":
                         help="brightness, contrast, saturation, hue passed onto the color jitter transform (default: 0.1, 0.1, 0.1, 0.1)")
     parser.add_argument("-n", "--noise", nargs='+', type=float, default=[0, 0.0001],
                         help="mean, std of gaussian noise transform (default: 0, 0.0001)")
-    parser.add_argument("-c", "--character-set", type=to_character_set, default="jouyou_kanji_and_simple_hiragana",
+    parser.add_argument("-c", "--character-set", type=str, default="jouyou_kanji_and_simple_hiragana",
                         help="name of characters to use (default: jouyou_kanji_and_simple_hiragana)")
     run(parser.parse_args())
