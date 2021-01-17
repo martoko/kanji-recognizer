@@ -21,6 +21,32 @@ def font_paths(folder):
            glob.glob(os.path.join(folder, '**/*.ttc'), recursive=True) + \
            glob.glob(os.path.join(folder, '**/*.otf'), recursive=True)
 
+def font_infos(characters, folder):
+    def has_glyph(font, glyph):
+        for table in font['cmap'].tables:
+            if ord(glyph) in table.cmap.keys():
+                return True
+        return False
+
+    infos = []
+    for path in font_paths(folder):
+        font = TTFont(path)
+        supported_glyphs = set()
+        missing_glyphs = set()
+        for character in characters:
+            if has_glyph(font, character):
+                supported_glyphs.add(character)
+            else:
+                missing_glyphs.add(character)
+        if len(missing_glyphs) > 0:
+            print(f"{len(missing_glyphs)}/{len(characters)} characters are missing from {os.path.basename(path)}")
+        infos += [{
+            "path": path,
+            "supported_glyphs": supported_glyphs,
+            "missing_glyphs": missing_glyphs
+        }]
+    return infos
+
 # TODO: Go through each font and check what chars are available and build a map, so that we can be smart about it at generation time and so we can provide a single line for each font stating how many chars are missing
 
 
@@ -102,41 +128,26 @@ class RecognizerGeneratedDataset(IterableDataset):
     # TODO: Italic
     def __init__(self, fonts_folder: str, characters=kanji.jouyou_kanji, transform=None):
         super(RecognizerGeneratedDataset).__init__()
-        self.font_files = font_paths(fonts_folder)
+        self.font_infos = font_infos(characters, fonts_folder)
         self.transform = transform
         self.character_index = 0
         self.characters = characters
         self.id = 'recognizer-2'
-        self.missing_chars = []
+
+    def font_paths_supporting_glyph(self, glyph):
+        return [info['path'] for info in self.font_infos if glyph in info['supported_glyphs']]
 
     def generate(self):
         character = self.characters[self.character_index]
         label = self.character_index
-        font_path = random.choice(self.font_files)
+        font_path = random.choice(self.font_paths_supporting_glyph(character))
         font_size = randint(12, 22)
-
-        def has_glyph(glyph):
-            font = TTFont(font_path)
-            for table in font['cmap'].tables:
-                if ord(glyph) in table.cmap.keys():
-                    return True
-            return False
-
-        if not has_glyph(character):
-            if character not in self.missing_chars:
-                self.missing_chars += [character]
-                print(f"{len(self.missing_chars)}/{len(self.characters)} characters are missing from {font_path}")
-                self.character_index = (self.character_index + 1) % len(self.characters)
-            return self.generate()
 
         font = ImageFont.truetype(font_path, font_size)
         left, top, right, bottom = font.getbbox(character, anchor='lt', language='ja')
         if right == 0 or bottom == 0:
-            if character not in self.missing_chars:
-                self.missing_chars += [character]
-                print(f"{len(self.missing_chars)}/{len(self.characters)} characters are missing from {font_path}")
-                self.character_index = (self.character_index + 1) % len(self.characters)
-            return self.generate()
+            print(f"{character} is missing from {os.path.basename(font_path)}")
+            exit(-1)
 
         sample = Image.new('RGB', (right + 8, bottom + 8), color=random_white_color())
         drawing = ImageDraw.Draw(sample)
@@ -227,13 +238,12 @@ class HiraganaDataset(IterableDataset):
 
 # TODO: Shuffle character order
 if __name__ == '__main__':
-    def generate(dataset, count=200):
+    def generate(dataset):
         if pathlib.Path(f"data/generated/{dataset.id}").exists():
             shutil.rmtree(f"data/generated/{dataset.id}")
         pathlib.Path(f"data/generated/{dataset.id}").mkdir(parents=True, exist_ok=True)
-        dataset.character_index = len(dataset.characters) - count
         iterator = iter(dataset)
-        for i in range(count):
+        for i in range(len(dataset.characters)):
             sample, label = next(iterator)
             sample.save(f"data/generated/{dataset.id}/{i}.png")
 
@@ -253,6 +263,6 @@ if __name__ == '__main__':
     # normalization_data(BoxerDataset("data/fonts", "data/background-images"), "boxer")
     # normalization_data(HiraganaDataset("data/fonts", "data/background-images"), "hiragana")
 
-    generate(RecognizerGeneratedDataset("data/fonts"))
+    generate(RecognizerGeneratedDataset("data/fonts", characters=kanji.frequent_kanji))
     # generate(BoxerDataset("data/fonts", "data/background-images"), "boxer")
     # generate(HiraganaDataset("data/fonts", "data/background-images"), "hiragana")
