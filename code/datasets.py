@@ -11,6 +11,7 @@ from PIL import ImageFont, Image, ImageFile, ImageDraw, ImageStat
 from torch.utils.data import IterableDataset, Dataset
 from torch.utils.data.dataset import T_co
 import kanji
+from fontTools.ttLib import TTFont
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
@@ -19,6 +20,8 @@ def font_paths(folder):
     return glob.glob(os.path.join(folder, '**/*.ttf'), recursive=True) + \
            glob.glob(os.path.join(folder, '**/*.ttc'), recursive=True) + \
            glob.glob(os.path.join(folder, '**/*.otf'), recursive=True)
+
+# TODO: Go through each font and check what chars are available and build a map, so that we can be smart about it at generation time and so we can provide a single line for each font stating how many chars are missing
 
 
 def background_images(folder):
@@ -111,6 +114,21 @@ class RecognizerGeneratedDataset(IterableDataset):
         label = self.character_index
         font_path = random.choice(self.font_files)
         font_size = randint(12, 22)
+
+        def has_glyph(glyph):
+            font = TTFont(font_path)
+            for table in font['cmap'].tables:
+                if ord(glyph) in table.cmap.keys():
+                    return True
+            return False
+
+        if not has_glyph(character):
+            if character not in self.missing_chars:
+                self.missing_chars += [character]
+                print(f"{len(self.missing_chars)}/{len(self.characters)} characters are missing from {font_path}")
+                self.character_index = (self.character_index + 1) % len(self.characters)
+            return self.generate()
+
         font = ImageFont.truetype(font_path, font_size)
         left, top, right, bottom = font.getbbox(character, anchor='lt', language='ja')
         if right == 0 or bottom == 0:
@@ -213,6 +231,7 @@ if __name__ == '__main__':
         if pathlib.Path(f"data/generated/{dataset.id}").exists():
             shutil.rmtree(f"data/generated/{dataset.id}")
         pathlib.Path(f"data/generated/{dataset.id}").mkdir(parents=True, exist_ok=True)
+        dataset.character_index = len(dataset.characters) - count
         iterator = iter(dataset)
         for i in range(count):
             sample, label = next(iterator)
