@@ -96,10 +96,9 @@ class RecognizerGeneratedDataset(IterableDataset):
     # TODO: Add random lines to image, also in same color as text
     # TODO: Legible text is more common than completely illegible text
     # TODO: Italic
-    def __init__(self, fonts_folder: str, background_image_folder: str, characters=kanji.jouyou_kanji, transform=None):
+    def __init__(self, fonts_folder: str, characters=kanji.jouyou_kanji, transform=None):
         super(RecognizerGeneratedDataset).__init__()
         self.font_files = font_paths(fonts_folder)
-        self.background_images = background_images(background_image_folder)
         self.transform = transform
         self.character_index = 0
         self.characters = characters
@@ -230,6 +229,6 @@ if __name__ == '__main__':
     # normalization_data(BoxerDataset("data/fonts", "data/background-images"), "boxer")
     # normalization_data(HiraganaDataset("data/fonts", "data/background-images"), "hiragana")
 
-    generate(RecognizerGeneratedDataset("data/fonts", "data/background-images"))
+    generate(RecognizerGeneratedDataset("data/fonts"))
     # generate(BoxerDataset("data/fonts", "data/background-images"), "boxer")
     # generate(HiraganaDataset("data/fonts", "data/background-images"), "hiragana")

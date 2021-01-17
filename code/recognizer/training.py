@@ -70,14 +70,13 @@ def run(args):
         transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
     ])
 
-    trainset = RecognizerGeneratedDataset(args.fonts_folder, args.background_images_folder, characters=characters,
-                                          transform=train_transform)
+    trainset = RecognizerGeneratedDataset(args.fonts_folder, characters=characters, transform=train_transform)
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=args.batch_size)
     testset = RecognizerTestDataset(args.test_folder, characters=characters, transform=test_transform)
     testloader = torch.utils.data.DataLoader(testset, batch_size=args.batch_size)
     wandb.config.update({"dataset": trainset.id})
 
-    model = KanjiRecognizer(input_dimensions=32, output_dimensions=len(trainset.characters)).to(device)
+    model = KanjiRecognizer(output_dimensions=len(trainset.characters)).to(device)
     wandb.watch(model)
     if args.input_path is not None and os.path.exists(args.input_path):
         print(f"Loading checkpoint from {args.input_path}")
@@ -304,8 +303,8 @@ if __name__ == "__main__":
                         help="the learning rate of the the optimizer (default: 1e-3)")
     parser.add_argument("-j", "--color-jitter", nargs='+', type=float, default=[0.1, 0.1, 0.1, 0.1],
                         help="brightness, contrast, saturation, hue passed onto the color jitter transform (default: 0.1, 0.1, 0.1, 0.1)")
-    parser.add_argument("-n", "--noise", nargs='+', type=float, default=[0, 0.0001],
-                        help="mean, std of gaussian noise transform (default: 0, 0.0001)")
+    parser.add_argument("-n", "--noise", nargs='+', type=float, default=[0, 0.0005],
+                        help="mean, std of gaussian noise transform (default: 0, 0.0005)")
     parser.add_argument("-c", "--character-set", type=str, default="jouyou_kanji_and_simple_hiragana",
                         help="name of characters to use (default: jouyou_kanji_and_simple_hiragana)")
     run(parser.parse_args())
