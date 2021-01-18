@@ -11,9 +11,9 @@ from PySide6 import QtGui
 import numpy as np
 import PIL
 
-from PySide6.QtGui import QGuiApplication, QCursor, QPixmap
+from PySide6.QtGui import QGuiApplication, QCursor, QPixmap, QFont
 from PySide6.QtWidgets import (QApplication, QLabel, QPushButton,
-                               QVBoxLayout, QWidget)
+                               QVBoxLayout, QWidget, QLineEdit)
 from PySide6.QtCore import Slot, Qt, QEvent, QRect, QByteArray, QBuffer, QIODevice, QPoint
 from matplotlib import pyplot
 from torchvision.transforms import transforms
@@ -33,7 +33,7 @@ class Qanji(QWidget):
         # self.boxer = KanjiBoxer(input_dimensions=32)
         # self.boxer.load_state_dict(torch.load('./box_saved_model.pt'))
 
-        self.characters = kanji.jouyou_kanji_and_simple_hiragana
+        self.characters = kanji.frequent_kanji
         self.recog = KanjiRecognizer(output_dimensions=len(self.characters))
         self.recog.load_state_dict(torch.load('/home/martoko/saved_model.pt'))
         self.recog.eval()
@@ -50,7 +50,8 @@ class Qanji(QWidget):
         self.button = QPushButton("Click me!")
         self.screenshot_label = QLabel()
         self.screenshot_label.setAlignment(Qt.AlignCenter)
-        self.text = QLabel("While focus is on this window, press shift to perform OCR")
+        self.text = QLineEdit("While focus is on this window, press shift to perform OCR")
+        self.text.setFont(QFont("sans serif", 32))
         self.text.setAlignment(Qt.AlignCenter)
 
         self.layout = QVBoxLayout()
@@ -163,7 +164,7 @@ class Qanji(QWidget):
         # print(ocr)
         ocr2 = [self.characters[best_indices[0][i]] for i in range(5)]
         print(ocr2)
-        self.text.setText(", ".join(ocr2))
+        self.text.setText("　".join(ocr2))
 
         im = pilimg.convert("RGB")
         data = im.tobytes("raw", "RGB")
