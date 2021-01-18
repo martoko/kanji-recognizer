@@ -3,19 +3,16 @@ import math
 import sys
 from typing import *
 
-import cv2
+import PIL
+import numpy as np
 import torch
-from PIL import Image, ImageDraw
+from PIL import Image
 from PIL.Image import NEAREST
 from PySide6 import QtGui
-import numpy as np
-import PIL
-
+from PySide6.QtCore import Slot, Qt, QEvent, QRect, QByteArray, QBuffer, QIODevice, QPoint
 from PySide6.QtGui import QGuiApplication, QCursor, QPixmap, QFont
 from PySide6.QtWidgets import (QApplication, QLabel, QPushButton,
                                QVBoxLayout, QWidget, QLineEdit)
-from PySide6.QtCore import Slot, Qt, QEvent, QRect, QByteArray, QBuffer, QIODevice, QPoint
-from matplotlib import pyplot
 from torchvision.transforms import transforms
 
 # from box_model import KanjiBoxer
