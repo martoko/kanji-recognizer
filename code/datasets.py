@@ -280,10 +280,10 @@ if __name__ == '__main__':
         print(f"{name}: mean {pixels.mean()}, std: {pixels.std()}")
 
 
-    # normalization_data(RecognizerGeneratedDataset("data/fonts", "data/background-images"), "recognizer")
+    # normalization_data(RecognizerGeneratedDataset("data/fonts", characters=kanji.frequent_kanji_plus), "recognizer")
     # normalization_data(BoxerDataset("data/fonts", "data/background-images"), "boxer")
     # normalization_data(HiraganaDataset("data/fonts", "data/background-images"), "hiragana")
 
-    generate(RecognizerGeneratedDataset("data/fonts", characters=kanji.frequent_kanji))
+    generate(RecognizerGeneratedDataset("data/fonts", characters=kanji.frequent_kanji_plus))
     # generate(BoxerDataset("data/fonts", "data/background-images"), "boxer")
     # generate(HiraganaDataset("data/fonts", "data/background-images"), "hiragana")

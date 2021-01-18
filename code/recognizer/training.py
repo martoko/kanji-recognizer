@@ -63,13 +63,24 @@ def run(args):
         def __repr__(self):
             return self.__class__.__name__ + '(mean={0}, std={1})'.format(self.mean, self.std)
 
-    train_transform = transforms.Compose([
+    adversarial_transform = transforms.Compose([
         transforms.RandomCrop((32, 32)),
         transforms.ColorJitter(*args.color_jitter),
         transforms.Lambda(lambda img: PIL.ImageOps.invert(img) if random.random() > 0.5 else img),
         transforms.ToTensor(),
-        GaussianNoise(*args.noise),
+        GaussianNoise(*args.noise)
+    ])
+
+    plain_transform = transforms.Compose([
+        transforms.CenterCrop((28, 28)),
+        transforms.Resize((32, 32)),
+        transforms.ToTensor()
+    ])
+
+    train_transform = transforms.Compose([
+        transforms.Lambda(lambda img: adversarial_transform(img) if random.random() > 0.1 else plain_transform(img)),
         transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
+        # recognizer: mean 0.8515397726034853, std: 0.2013882252859569
     ])
 
     test_transform = transforms.Compose([
