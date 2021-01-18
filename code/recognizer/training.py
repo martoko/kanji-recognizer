@@ -79,7 +79,7 @@ def run(args):
         transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
     ])
 
-     trainset = RecognizerGeneratedDataset(args.fonts_folder, side_text=args.side_text, characters=characters,
+    trainset = RecognizerGeneratedDataset(args.fonts_folder, side_text=args.side_text, characters=characters,
                                           transform=train_transform)
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=args.batch_size)
     testset = RecognizerTestDataset(args.test_folder, characters=characters, transform=test_transform)
