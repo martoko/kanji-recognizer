@@ -128,12 +128,13 @@ class RecognizerGeneratedDataset(IterableDataset):
     # TODO: Add random lines to image, also in same color as text
     # TODO: Legible text is more common than completely illegible text
     # TODO: Italic
-    def __init__(self, fonts_folder: str, characters=kanji.jouyou_kanji, transform=None):
+    def __init__(self, fonts_folder: str, side_text=True, characters=kanji.jouyou_kanji, transform=None):
         super(RecognizerGeneratedDataset).__init__()
         self.font_infos = font_infos(characters, fonts_folder)
         self.transform = transform
         self.character_index = 0
         self.characters = characters
+        self.side_text = side_text
         self.id = 'recognizer-3'
 
     def fonts_supporting_glyph(self, glyph):
@@ -144,23 +145,35 @@ class RecognizerGeneratedDataset(IterableDataset):
         label = self.character_index
         font_info = random.choice(self.fonts_supporting_glyph(character))
         font_size = randint(12, 22)
-        before = random.choice(tuple(font_info['supported_glyphs']))
-        after = random.choice(tuple(font_info['supported_glyphs']))
-        text = before + character + after
-
         font = ImageFont.truetype(font_info['path'], font_size)
-        for character in list(text):
+
+        if self.side_text:
+            before = random.choice(tuple(font_info['supported_glyphs']))
+            after = random.choice(tuple(font_info['supported_glyphs']))
+            text = before + character + after
+
+            for character in list(text):
+                left, top, right, bottom = font.getbbox(character, anchor='lt', language='ja')
+                if right == 0 or bottom == 0:
+                    print(f"{character} is missing from {os.path.basename(font_info['path'])}")
+                    exit(-1)
+
+            left, top, right, bottom = font.getbbox(text, anchor='lt', language='ja')
+
+            sample = Image.new('RGB', (round(right / 3) + 8, bottom + 8), color=random_white_color())
+            drawing = ImageDraw.Draw(sample)
+            drawing.text((4 - right / 3, 4), text, font=font, fill=random_color(), anchor='lt', language='ja')
+            sample = sample.resize((40, 40), resample=PIL.Image.NEAREST)
+        else:
             left, top, right, bottom = font.getbbox(character, anchor='lt', language='ja')
             if right == 0 or bottom == 0:
-                print(f"{character} is missing from {os.path.basename(font_info['path'])}")
+                print(f"{character} is missing from {os.path.basename(font['path'])}")
                 exit(-1)
 
-        left, top, right, bottom = font.getbbox(text, anchor='lt', language='ja')
-
-        sample = Image.new('RGB', (round(right / 3) + 8, bottom + 8), color=random_white_color())
-        drawing = ImageDraw.Draw(sample)
-        drawing.text((4 - right / 3, 4), text, font=font, fill=random_color(), anchor='lt', language='ja')
-        sample = sample.resize((40, 40), resample=PIL.Image.NEAREST)
+            sample = Image.new('RGB', (right + 8, bottom + 8), color=random_white_color())
+            drawing = ImageDraw.Draw(sample)
+            drawing.text((4, 4), character, font=font, fill=random_color(), anchor='lt', language='ja')
+            sample = sample.resize((40, 40), resample=PIL.Image.NEAREST)
 
         self.character_index = (self.character_index + 1) % len(self.characters)
         if self.transform is None:

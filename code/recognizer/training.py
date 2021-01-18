@@ -79,7 +79,8 @@ def run(args):
         transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
     ])
 
-    trainset = RecognizerGeneratedDataset(args.fonts_folder, characters=characters, transform=train_transform)
+     trainset = RecognizerGeneratedDataset(args.fonts_folder, side_text=args.side_text, characters=characters,
+                                          transform=train_transform)
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=args.batch_size)
     testset = RecognizerTestDataset(args.test_folder, characters=characters, transform=test_transform)
     testloader = torch.utils.data.DataLoader(testset, batch_size=args.batch_size)
@@ -318,4 +319,9 @@ if __name__ == "__main__":
                         help="name of characters to use (default: frequent_kanji)")
     parser.add_argument("-F", "--log-frequency", type=float, default=60,
                         help="how many seconds between logging (default: 60)")
+    parser.add_argument("-s", "--side-text", dest='side_text', action="store_true",
+                        help="generate artifacts in training images from text before/after (default)")
+    parser.add_argument("-S", "--no-side-text", dest='side_text', action="store_true",
+                        help="generate artifacts in training images from text before/after ")
+    parser.set_defaults(side_text=True)
     run(parser.parse_args())
