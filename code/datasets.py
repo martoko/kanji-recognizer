@@ -21,6 +21,7 @@ def font_paths(folder):
            glob.glob(os.path.join(folder, '**/*.ttc'), recursive=True) + \
            glob.glob(os.path.join(folder, '**/*.otf'), recursive=True)
 
+
 def font_infos(characters, folder):
     def has_glyph(font, glyph):
         for table in font['cmap'].tables:
@@ -46,6 +47,7 @@ def font_infos(characters, folder):
             "missing_glyphs": missing_glyphs
         }]
     return infos
+
 
 # TODO: Go through each font and check what chars are available and build a map, so that we can be smart about it at generation time and so we can provide a single line for each font stating how many chars are missing
 
@@ -132,26 +134,32 @@ class RecognizerGeneratedDataset(IterableDataset):
         self.transform = transform
         self.character_index = 0
         self.characters = characters
-        self.id = 'recognizer-2'
+        self.id = 'recognizer-3'
 
-    def font_paths_supporting_glyph(self, glyph):
-        return [info['path'] for info in self.font_infos if glyph in info['supported_glyphs']]
+    def fonts_supporting_glyph(self, glyph):
+        return [info for info in self.font_infos if glyph in info['supported_glyphs']]
 
     def generate(self):
         character = self.characters[self.character_index]
         label = self.character_index
-        font_path = random.choice(self.font_paths_supporting_glyph(character))
+        font_info = random.choice(self.fonts_supporting_glyph(character))
         font_size = randint(12, 22)
+        before = random.choice(tuple(font_info['supported_glyphs']))
+        after = random.choice(tuple(font_info['supported_glyphs']))
+        text = before + character + after
 
-        font = ImageFont.truetype(font_path, font_size)
-        left, top, right, bottom = font.getbbox(character, anchor='lt', language='ja')
-        if right == 0 or bottom == 0:
-            print(f"{character} is missing from {os.path.basename(font_path)}")
-            exit(-1)
+        font = ImageFont.truetype(font_info['path'], font_size)
+        for character in list(text):
+            left, top, right, bottom = font.getbbox(character, anchor='lt', language='ja')
+            if right == 0 or bottom == 0:
+                print(f"{character} is missing from {os.path.basename(font_info['path'])}")
+                exit(-1)
 
-        sample = Image.new('RGB', (right + 8, bottom + 8), color=random_white_color())
+        left, top, right, bottom = font.getbbox(text, anchor='lt', language='ja')
+
+        sample = Image.new('RGB', (round(right / 3) + 8, bottom + 8), color=random_white_color())
         drawing = ImageDraw.Draw(sample)
-        drawing.text((4, 4), character, font=font, fill=random_color(), anchor='lt', language='ja')
+        drawing.text((4 - right / 3, 4), text, font=font, fill=random_color(), anchor='lt', language='ja')
         sample = sample.resize((40, 40), resample=PIL.Image.NEAREST)
 
         self.character_index = (self.character_index + 1) % len(self.characters)
