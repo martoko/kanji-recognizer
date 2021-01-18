@@ -3,32 +3,14 @@ Copyright (c) 2019-present NAVER Corp.
 MIT License
 """
 
-# -*- coding: utf-8 -*-
-import sys
-import os
-import time
 import argparse
-
-import torch
-import torch.nn as nn
-import torch.backends.cudnn as cudnn
-from torch.autograd import Variable
-
-from PIL import Image
-
-import cv2
-from skimage import io
-import numpy as np
-import json
-import zipfile
-
+# -*- coding: utf-8 -*-
+import os
+# -*- coding: utf-8 -*-
+import time
 from collections import OrderedDict
 
-
-# -*- coding: utf-8 -*-
-import os
-import numpy as np
-import cv2
+import torch.backends.cudnn as cudnn
 
 """  
 Copyright (c) 2019-present NAVER Corp.
@@ -36,8 +18,6 @@ MIT License
 """
 
 # -*- coding: utf-8 -*-
-import numpy as np
-import cv2
 import math
 
 """  
@@ -56,9 +36,6 @@ MIT License
 """
 
 # -*- coding: utf-8 -*-
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
 
 """  
 Copyright (c) 2019-present NAVER Corp.
@@ -66,8 +43,6 @@ MIT License
 """
 
 # -*- coding: utf-8 -*-
-import torch
-import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
 
