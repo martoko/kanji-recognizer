@@ -32,7 +32,7 @@ class Qanji(QWidget):
 
         self.characters = kanji.frequent_kanji
         self.recog = KanjiRecognizer(output_dimensions=len(self.characters))
-        self.recog.load_state_dict(torch.load('/home/martoko/saved_model.pt'))
+        self.recog.load_state_dict(torch.load('/home/martoko/saved_model.pt', map_location=torch.device('cpu')))
         self.recog.eval()
 
         self.craft = CRAFT()
