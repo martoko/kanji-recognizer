@@ -26,6 +26,8 @@ cuda_is_available = torch.cuda.is_available() and torch.cuda.get_device_capabili
 def run(args):
     wandb.init(project="qanji", config=args)
     wandb.save("code/*")
+    wandb.save("code/recognizer/*")
+    wandb.save("code/recognizer/model.py")
     device = torch.device("cuda" if cuda_is_available else "cpu")
 
     def character_set_from_name(name):
