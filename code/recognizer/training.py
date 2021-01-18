@@ -35,6 +35,8 @@ def run(args):
             return kanji.jouyou_kanji
         if name == "frequent_kanji":
             return kanji.frequent_kanji
+        if name == "frequent_kanji_plus":
+            return kanji.frequent_kanji_plus
         if name == "jouyou_kanji_and_simple_hiragana":
             return kanji.jouyou_kanji_and_simple_hiragana
         if name == "simple_hiragana":
@@ -315,8 +317,8 @@ if __name__ == "__main__":
                         help="brightness, contrast, saturation, hue passed onto the color jitter transform (default: 0.1, 0.1, 0.1, 0.1)")
     parser.add_argument("-n", "--noise", nargs='+', type=float, default=[0, 0.0005],
                         help="mean, std of gaussian noise transform (default: 0, 0.0005)")
-    parser.add_argument("-c", "--character-set", type=str, default="frequent_kanji",
-                        help="name of characters to use (default: frequent_kanji)")
+    parser.add_argument("-c", "--character-set", type=str, default="frequent_kanji_plus",
+                        help="name of characters to use (default: frequent_kanji_plus)")
     parser.add_argument("-F", "--log-frequency", type=float, default=60,
                         help="how many seconds between logging (default: 60)")
     parser.add_argument("-s", "--side-text", dest='side_text', action="store_true",
