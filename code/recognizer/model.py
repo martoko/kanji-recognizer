@@ -1,23 +1,99 @@
-from typing import List
-
-import torch
 from torch import nn
 import torch.nn.functional as F
 
 
+# TODO: Idea supply inverted image
 class KanjiRecognizer(nn.Module):
-    def __init__(self, input_dimensions: int, output_dimensions: int):
+    def __init__(self, output_dimensions: int):
         super(KanjiRecognizer, self).__init__()
         self.pool = nn.MaxPool2d(kernel_size=2, stride=2)
-        self.conv1 = nn.Conv2d(in_channels=3, out_channels=16, kernel_size=3)  # 32 -> 30
-        self.conv2 = nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3)  # 15 -> 13
-        self.conv3 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3)  # 13 -> 11
-        self.linear = nn.Linear(64 * 11 * 11, output_dimensions)
+        self.conv1 = nn.Conv2d(in_channels=3, out_channels=128, kernel_size=3, padding=1)
+
+        self.conv2 = nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, padding=1)
+        self.conv3 = nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, padding=1)
+
+        self.conv4 = nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, padding=1)
+        self.conv5 = nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, padding=1)
+
+        self.conv6 = nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, padding=1)
+        self.conv7 = nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, padding=1)
+
+        self.conv8 = nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, padding=1)
+        self.conv9 = nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, padding=1)
+
+        self.conv10 = nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, padding=1)
+        self.conv11 = nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, padding=1)
+
+        self.conv12 = nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, padding=1)
+        self.conv13 = nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, padding=1)
+
+        self.conv14 = nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, padding=1)
+        self.conv15 = nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, padding=1)
+
+        self.conv16 = nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, padding=1)
+        self.conv17 = nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, padding=1)
+
+        self.conv18 = nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, padding=1)
+        self.conv19 = nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, padding=1)
+
+        self.linear = nn.Linear(128 * 2 * 2, output_dimensions)
 
     def forward(self, x):
-        x = self.pool(F.relu(self.conv1(x)))
+        x = F.relu(self.conv1(x))
+
+        before = x
         x = F.relu(self.conv2(x))
         x = F.relu(self.conv3(x))
-        x = x.view(-1, 64 * 11 * 11)
+        x += before
+
+        before = x
+        x = F.relu(self.conv4(x))
+        x = F.relu(self.conv5(x))
+        x += before
+
+        x = self.pool(x)
+
+        before = x
+        x = F.relu(self.conv6(x))
+        x = F.relu(self.conv7(x))
+        x += before
+
+        before = x
+        x = F.relu(self.conv8(x))
+        x = F.relu(self.conv9(x))
+        x += before
+
+        x = self.pool(x)
+
+        before = x
+        x = F.relu(self.conv10(x))
+        x = F.relu(self.conv11(x))
+        x += before
+
+        before = x
+        x = F.relu(self.conv12(x))
+        x = F.relu(self.conv13(x))
+        x += before
+
+        x = self.pool(x)
+
+        before = x
+        x = F.relu(self.conv14(x))
+        x = F.relu(self.conv15(x))
+        x += before
+
+        before = x
+        x = F.relu(self.conv16(x))
+        x = F.relu(self.conv17(x))
+        x += before
+
+        x = self.pool(x)
+
+        before = x
+        x = F.relu(self.conv18(x))
+        x = F.relu(self.conv19(x))
+        x += before
+
+        x = x.view(-1, 128 * 2 * 2)
         x = self.linear(x)
         return x
