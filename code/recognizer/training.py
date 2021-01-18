@@ -50,11 +50,6 @@ def run(args):
     def denormalize(img):
         return img / 0.5 + 0.5
 
-    def imshow(img):
-        npimg = denormalize(img).numpy()
-        plt.imshow(np.transpose(npimg, (1, 2, 0)))
-        plt.show()
-
     class GaussianNoise(object):
         def __init__(self, mean=0.0, std=0.1):
             self.std = std
@@ -83,7 +78,7 @@ def run(args):
 
     trainset = RecognizerGeneratedDataset(args.fonts_folder, side_text=args.side_text, characters=characters,
                                           transform=train_transform)
-    trainloader = torch.utils.data.DataLoader(trainset, batch_size=args.batch_size)
+    trainloader = torch.utils.data.DataLoader(trainset, batch_size=args.batch_size, pin_memory=cuda_is_available)
     testset = RecognizerTestDataset(args.test_folder, characters=characters, transform=test_transform)
     testloader = torch.utils.data.DataLoader(testset, batch_size=args.batch_size)
     wandb.config.update({"dataset": trainset.id})
