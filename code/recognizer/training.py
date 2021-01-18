@@ -25,6 +25,7 @@ cuda_is_available = torch.cuda.is_available() and torch.cuda.get_device_capabili
 
 def run(args):
     wandb.init(project="qanji", config=args)
+    wandb.save("code/*")
     device = torch.device("cuda" if cuda_is_available else "cpu")
 
     def character_set_from_name(name):
@@ -229,6 +230,7 @@ def run(args):
         print(f"Saving model to {args.output_path}")
         pathlib.Path(args.output_path).parent.mkdir(parents=True, exist_ok=True)
         torch.save(model.state_dict(), args.output_path)
+        wandb.save("data/models/recognizer.pt")
 
     print("Accuracy of the network: %d %%" % evaluate_train())
 
