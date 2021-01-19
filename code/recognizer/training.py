@@ -131,7 +131,7 @@ def run(args):
             wandb.log({"train/failure_cases": [wandb.Image(
                 case["image"],
                 caption=f"Prediction: {case['prediction']} Truth: {case['label']}"
-            ) for case in sorted(failure_cases, key=lambda item: item['confidence'])[:8]]})
+            ) for case in sorted(failure_cases, key=lambda item: item['confidence'])[:8]]}, commit=False)
             return 100 * correct / total
 
     def evaluate_validation():
@@ -176,7 +176,7 @@ def run(args):
                     case["image"],
                     caption=f"Prediction: {case['prediction']} Truth: {case['label']}"
                 ) for case in sorted(failure_cases, key=lambda item: item['confidence'])[:8]]
-            })
+            }, commit=False)
             return 100 * correct / total
 
     criterion = nn.CrossEntropyLoss()
@@ -226,7 +226,7 @@ def run(args):
                     image,
                     caption=f"Prediction: {trainset.characters[prediction]} Truth: {trainset.characters[label]}"
                 ) for image, label, prediction in zip(images[:8], predictions[:8], labels[:8])]
-            })
+            }, commit=True)
             running_loss = 0.0
             batches_since_last_report = 0
             time_of_last_log = time.time()
@@ -264,7 +264,7 @@ def run(args):
                 "examples": [wandb.Image(
                     image,
                     caption=f"Prediction: {trainset.characters[prediction]} Truth: {trainset.characters[label]}"
-                ) for image, label, prediction in zip(images[:examples], predictions[:examples], labels[:examples])]
+                ) for image, prediction, label in zip(images[:examples], predictions[:examples], labels[:examples])]
             })
 
     def log_failure_cases(count=10):
