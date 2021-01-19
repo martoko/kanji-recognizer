@@ -131,7 +131,7 @@ def run(args):
             wandb.log({"train/failure_cases": [wandb.Image(
                 case["image"],
                 caption=f"Prediction: {case['prediction']} Truth: {case['label']}"
-            ) for case in sorted(failure_cases, key=lambda item: item['confidence'])[:8]]}, commit=False)
+            ) for case in sorted(failure_cases, key=lambda item: item['confidence'])[:1]]}, commit=False)
             return 100 * correct / total
 
     def evaluate_validation():
@@ -171,11 +171,11 @@ def run(args):
                 "validation/examples": [wandb.Image(
                     case["image"],
                     caption=f"Prediction: {case['prediction']} Truth: {case['label']}"
-                ) for case in test_results[:20]],
+                ) for case in test_results[:1]],
                 "validation/failure_cases": [wandb.Image(
                     case["image"],
                     caption=f"Prediction: {case['prediction']} Truth: {case['label']}"
-                ) for case in sorted(failure_cases, key=lambda item: item['confidence'])[:8]]
+                ) for case in sorted(failure_cases, key=lambda item: item['confidence'])[:1]]
             }, commit=False)
             return 100 * correct / total
 
