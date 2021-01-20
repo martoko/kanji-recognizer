@@ -159,7 +159,7 @@ class LitRecognizer(pl.LightningModule):
         return logits
 
     def validation_epoch_end(self, validation_step_outputs):
-        dummy_input = torch.zeros(1,3,32,32, device=self.device)
+        dummy_input = torch.zeros(1, 3, 32, 32, device=self.device)
         filename = f'model_{str(self.global_step).zfill(5)}.onnx'
         torch.onnx.export(self, dummy_input, filename)
         wandb.save(filename)
@@ -178,7 +178,7 @@ class LitRecognizer(pl.LightningModule):
         self.log('test/acc', self.accuracy(logits, labels))
 
     def test_epoch_end(self, test_step_outputs):
-        dummy_input = torch.zeros(32 * 32, device=self.device)
+        dummy_input = torch.zeros(1, 3, 32, 32, device=self.device)
         filename = 'model_final.onnx'
         torch.onnx.export(self, dummy_input, filename)
         wandb.save(filename)
