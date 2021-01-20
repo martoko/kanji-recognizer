@@ -160,14 +160,13 @@ class LitRecognizer(pl.LightningModule):
 
     def validation_epoch_end(self, validation_step_outputs):
         dummy_input = torch.zeros(1, 3, 32, 32, device=self.device)
-        filename = f'model_{str(self.global_step).zfill(5)}.onnx'
+        filename = f'model_{str(self.logger.step).zfill(5)}.onnx'
         torch.onnx.export(self, dummy_input, filename)
         wandb.save(filename)
 
         flattened_logits = torch.flatten(torch.cat(validation_step_outputs))
         self.logger.experiment.log({
-            'valid/logits': wandb.Histogram(flattened_logits.to('cpu')),
-            'global_step': self.global_step
+            'valid/logits': wandb.Histogram(flattened_logits.to('cpu'))
         })
 
     def test_step(self, batch, batch_index):
@@ -201,8 +200,7 @@ class ImagePredictionLogger(pl.Callback):
             'examples': [wandb.Image(
                 image,
                 caption=f'Prediction: {prediction}, Label: {label}'
-            ) for image, prediction, label in zip(images, predictions, self.labels)],
-            'global_step': trainer.global_step
+            ) for image, prediction, label in zip(images, predictions, self.labels)]
         })
 
 
