@@ -131,6 +131,16 @@ frequent_kanji_plus = list(
 
 jouyou_kanji_and_simple_hiragana = jouyou_kanji + simple_hiragana
 
+character_sets = {
+    "kanji": kanji,
+    "jouyou_kanji": jouyou_kanji,
+    "frequent_kanji": frequent_kanji,
+    "frequent_kanji_plus": frequent_kanji_plus,
+    "jouyou_kanji_and_simple_hiragana": jouyou_kanji_and_simple_hiragana,
+    "simple_hiragana": simple_hiragana,
+    "simpler_hiragana": simpler_hiragana
+}
+
 if __name__ == "__main__":
     print("常用漢字")
     print(jouyou_kanji[:10])

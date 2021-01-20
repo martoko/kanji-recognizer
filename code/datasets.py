@@ -121,7 +121,7 @@ class BoxerDataset(IterableDataset):
         return self.generate()
 
 
-class RecognizerGeneratedDataset(IterableDataset):
+class KanjiRecognizerGeneratedDataset(IterableDataset):
     # TODO: Rotate/morph/skew
     # TODO: Other characters as part of background?
     # TODO: Add a small random padding/cropping to be more resistant to faulty cropping
@@ -129,7 +129,7 @@ class RecognizerGeneratedDataset(IterableDataset):
     # TODO: Legible text is more common than completely illegible text
     # TODO: Italic
     def __init__(self, fonts_folder: str, side_text=True, characters=kanji.jouyou_kanji, transform=None):
-        super(RecognizerGeneratedDataset).__init__()
+        super(KanjiRecognizerGeneratedDataset).__init__()
         self.font_infos = font_infos(characters, fonts_folder)
         self.transform = transform
         self.character_index = 0
@@ -284,6 +284,6 @@ if __name__ == '__main__':
     # normalization_data(BoxerDataset("data/fonts", "data/background-images"), "boxer")
     # normalization_data(HiraganaDataset("data/fonts", "data/background-images"), "hiragana")
 
-    generate(RecognizerGeneratedDataset("data/fonts", characters=kanji.frequent_kanji_plus))
+    generate(KanjiRecognizerGeneratedDataset("data/fonts", characters=kanji.frequent_kanji_plus))
     # generate(BoxerDataset("data/fonts", "data/background-images"), "boxer")
     # generate(HiraganaDataset("data/fonts", "data/background-images"), "hiragana")

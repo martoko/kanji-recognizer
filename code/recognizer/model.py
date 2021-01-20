@@ -96,4 +96,5 @@ class KanjiRecognizer(nn.Module):
 
         x = x.view(-1, 128 * 2 * 2)
         x = self.linear(x)
+
         return x

@@ -16,7 +16,7 @@ import torchvision.transforms as transforms
 import wandb
 
 import kanji
-from datasets import RecognizerGeneratedDataset, RecognizerTestDataset
+from datasets import KanjiRecognizerGeneratedDataset, RecognizerTestDataset
 from model import KanjiRecognizer
 
 cuda_is_available = torch.cuda.is_available() and torch.cuda.get_device_capability() != (3, 0) and \
@@ -89,8 +89,8 @@ def run(args):
         transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
     ])
 
-    trainset = RecognizerGeneratedDataset(args.fonts_folder, side_text=args.side_text, characters=characters,
-                                          transform=train_transform)
+    trainset = KanjiRecognizerGeneratedDataset(args.fonts_folder, side_text=args.side_text, characters=characters,
+                                               transform=train_transform)
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=args.batch_size, pin_memory=cuda_is_available)
     testset = RecognizerTestDataset(args.test_folder, characters=characters, transform=test_transform)
     testloader = torch.utils.data.DataLoader(testset, batch_size=args.batch_size)
