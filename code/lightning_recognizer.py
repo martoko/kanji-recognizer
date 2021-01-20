@@ -159,10 +159,10 @@ class LitRecognizer(pl.LightningModule):
         return logits
 
     def validation_epoch_end(self, validation_step_outputs):
-        dummy_input = torch.zeros(1, 3, 32, 32, device=self.device)
-        filename = f'model_{str(self.logger.step).zfill(5)}.onnx'
-        torch.onnx.export(self, dummy_input, filename)
-        wandb.save(filename)
+        # dummy_input = torch.zeros(1, 3, 32, 32, device=self.device)
+        # filename = f'model_{str(self.logger.step).zfill(5)}.onnx'
+        # torch.onnx.export(self, dummy_input, filename)
+        # wandb.save(filename)
 
         flattened_logits = torch.flatten(torch.cat(validation_step_outputs))
         self.logger.experiment.log({
@@ -177,10 +177,11 @@ class LitRecognizer(pl.LightningModule):
         self.log('test/acc', self.accuracy(logits, labels))
 
     def test_epoch_end(self, test_step_outputs):
-        dummy_input = torch.zeros(1, 3, 32, 32, device=self.device)
-        filename = 'model_final.onnx'
-        torch.onnx.export(self, dummy_input, filename)
-        wandb.save(filename)
+        # dummy_input = torch.zeros(1, 3, 32, 32, device=self.device)
+        # filename = 'model_final.onnx'
+        # torch.onnx.export(self, dummy_input, filename)
+        # wandb.save(filename)
+        pass
 
 
 class ImagePredictionLogger(pl.Callback):
@@ -313,7 +314,8 @@ if __name__ == "__main__":
     datamodule.setup()
     trainer = pl.Trainer.from_argparse_args(
         args,
-        logger=WandbLogger(project='lit-qanji')
+        logger=WandbLogger(project='lit-qanji'),
+        fast_dev_run=True
     )
     model = LitRecognizer(**vars(args))
     trainer.fit(model, datamodule=datamodule)
