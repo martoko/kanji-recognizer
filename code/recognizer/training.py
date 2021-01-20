@@ -89,7 +89,7 @@ def run(args):
         transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
     ])
 
-    trainset = KanjiRecognizerGeneratedDataset(args.fonts_folder, side_text=args.side_text, characters=characters,
+    trainset = KanjiRecognizerGeneratedDataset(args.fonts_folder, noise_background=args.noise_background, side_text=args.side_text, characters=characters,
                                                transform=train_transform)
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=args.batch_size, pin_memory=cuda_is_available)
     testset = RecognizerTestDataset(args.test_folder, characters=characters, transform=test_transform)
@@ -332,6 +332,11 @@ if __name__ == "__main__":
     parser.add_argument("-s", "--side-text", dest='side_text', action="store_true",
                         help="generate artifacts in training images from text before/after (default)")
     parser.add_argument("-S", "--no-side-text", dest='side_text', action="store_true",
-                        help="generate artifacts in training images from text before/after ")
+                        help="do not generate artifacts in training images from text before/after")
     parser.set_defaults(side_text=True)
+    parser.add_argument("-g", "--noise-background", dest='side_text', action="store_true",
+                        help="draw kanji on top of a random noise background (default)")
+    parser.add_argument("-G", "--no-noise-background", dest='side_text', action="store_true",
+                        help="do not draw kanji on top of a random noise background")
+    parser.set_defaults(noise_background=True)
     run(parser.parse_args())

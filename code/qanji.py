@@ -30,9 +30,9 @@ class Qanji(QWidget):
         # self.boxer = KanjiBoxer(input_dimensions=32)
         # self.boxer.load_state_dict(torch.load('./box_saved_model.pt'))
 
-        self.characters = kanji.frequent_kanji
+        self.characters = kanji.frequent_kanji_plus
         self.recog = KanjiRecognizer(output_dimensions=len(self.characters))
-        self.recog.load_state_dict(torch.load('/home/martoko/saved_model.pt', map_location=torch.device('cpu')))
+        self.recog.load_state_dict(torch.load('/home/martoko/deep-music.pt', map_location=torch.device('cpu')))
         self.recog.eval()
 
         self.craft = CRAFT()

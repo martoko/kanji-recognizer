@@ -128,17 +128,22 @@ class KanjiRecognizerGeneratedDataset(IterableDataset):
     # TODO: Add random lines to image, also in same color as text
     # TODO: Legible text is more common than completely illegible text
     # TODO: Italic
-    def __init__(self, fonts_folder: str, side_text=True, characters=kanji.jouyou_kanji, transform=None):
+     def __init__(self, fonts_folder: str, side_text=True, noise_background=True, characters=kanji.jouyou_kanji,
+                 transform=None):
         super(KanjiRecognizerGeneratedDataset).__init__()
         self.font_infos = font_infos(characters, fonts_folder)
         self.transform = transform
         self.character_index = 0
         self.characters = characters
         self.side_text = side_text
+        self.noise_background = noise_background
         self.id = 'recognizer-3'
 
     def fonts_supporting_glyph(self, glyph):
         return [info for info in self.font_infos if glyph in info['supported_glyphs']]
+
+    def random_noise(self, width, height):
+        return Image.fromarray(np.random.randint(0, 255, (width, height, 3), dtype=np.dtype('uint8')))
 
     def generate(self):
         character = self.characters[self.character_index]
@@ -160,7 +165,10 @@ class KanjiRecognizerGeneratedDataset(IterableDataset):
 
             left, top, right, bottom = font.getbbox(text, anchor='lt', language='ja')
 
-            sample = Image.new('RGB', (round(right / 3) + 8, bottom + 8), color=random_white_color())
+            if self.noise_background:
+                sample = self.random_noise(round(right / 3) + 8, bottom + 8)
+            else:
+                sample = Image.new('RGB', (round(right / 3) + 8, bottom + 8), color=random_white_color())
             drawing = ImageDraw.Draw(sample)
             drawing.text((4 - right / 3, 4), text, font=font, fill=random_color(), anchor='lt', language='ja')
             sample = sample.resize((40, 40), resample=PIL.Image.NEAREST)
@@ -170,7 +178,10 @@ class KanjiRecognizerGeneratedDataset(IterableDataset):
                 print(f"{character} is missing from {os.path.basename(font['path'])}")
                 exit(-1)
 
-            sample = Image.new('RGB', (right + 8, bottom + 8), color=random_white_color())
+            if self.noise_background:
+                sample = self.random_noise(right + 8, bottom + 8)
+            else:
+                sample = Image.new('RGB', (right + 8, bottom + 8), color=random_white_color())
             drawing = ImageDraw.Draw(sample)
             drawing.text((4, 4), character, font=font, fill=random_color(), anchor='lt', language='ja')
             sample = sample.resize((40, 40), resample=PIL.Image.NEAREST)
