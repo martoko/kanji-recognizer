@@ -246,7 +246,7 @@ def run(args):
                 "train/examples": [wandb.Image(
                     image,
                     caption=f"Prediction: {trainset.characters[prediction]} Truth: {trainset.characters[label]}"
-                ) for image, label, prediction in zip(images[:8], predictions[:8], labels[:8])]
+                ) for image, prediction, label in zip(images[:8], predictions[:8], labels[:8])]
             }, commit=True)
             save_checkpoint()
             running_loss = 0.0
