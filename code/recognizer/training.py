@@ -179,7 +179,7 @@ def run(args):
                 "validation/failure_cases": [wandb.Image(
                     case["image"],
                     caption=f"Prediction: {case['prediction']} Truth: {case['label']}"
-                ) for case in sorted(failure_cases, key=lambda item: item['confidence'])]
+                ) for case in sorted(failure_cases, key=lambda item: item['confidence'])[:8]]
             }, commit=False)
             return 100 * correct / total
 
