@@ -341,8 +341,8 @@ if __name__ == "__main__":
                         help="the size of the batch used on each training step (default: 128)")
     parser.add_argument("-t", "--training-time", type=float, default=float('inf'),
                         help="stop training after this amount of minutes (default: inf)")
-    parser.add_argument("-l", "--learning-rate", type=float, default=1e-3,
-                        help="the learning rate of the the optimizer (default: 1e-3)")
+    parser.add_argument("-l", "--learning-rate", type=float, default=1e-4,
+                        help="the learning rate of the the optimizer (default: 1e-4)")
     parser.add_argument("-j", "--color-jitter", nargs='+', type=float, default=[0.1, 0.1, 0.1, 0.1],
                         help="brightness, contrast, saturation, hue passed onto the color jitter transform (default: 0.1, 0.1, 0.1, 0.1)")
     parser.add_argument("-N", "--noise", nargs='+', type=float, default=[0, 0.0005],
