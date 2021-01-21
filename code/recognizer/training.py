@@ -351,10 +351,10 @@ if __name__ == "__main__":
                         help="name of characters to use (default: frequent_kanji_plus)")
     parser.add_argument("-F", "--log-frequency", type=float, default=600,
                         help="how many seconds between logging (default: 600)")
-    parser.add_argument("-s", "--side-text-ratio", type=float, default=0.8,
-                        help="generate artifacts in training images from text before/after (default: 0.8)")
-    parser.add_argument("-g", "--noise-background-ratio", type=float, default=0.7,
-                        help="percentage of images whose background is random noise (default: 0.7)")
+    parser.add_argument("-s", "--side-text-ratio", type=float, default=0.9,
+                        help="generate artifacts in training images from text before/after (default: 0.9)")
+    parser.add_argument("-g", "--noise-background-ratio", type=float, default=0.4,
+                        help="percentage of images whose background is random noise (default: 0.4)")
     parser.add_argument("-n", "--name", type=str,
                         help="name of the run (default: auto generated)")
     parser.add_argument("-r", "--resume", type=str, default=False,
