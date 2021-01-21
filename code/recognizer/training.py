@@ -349,8 +349,8 @@ if __name__ == "__main__":
                         help="mean, std of gaussian noise transform (default: 0, 0.0005)")
     parser.add_argument("-c", "--character-set", type=str, default="frequent_kanji_plus",
                         help="name of characters to use (default: frequent_kanji_plus)")
-    parser.add_argument("-F", "--log-frequency", type=float, default=60,
-                        help="how many seconds between logging (default: 60)")
+    parser.add_argument("-F", "--log-frequency", type=float, default=600,
+                        help="how many seconds between logging (default: 600)")
     parser.add_argument("-s", "--side-text-ratio", type=float, default=0.8,
                         help="generate artifacts in training images from text before/after (default: 0.8)")
     parser.add_argument("-g", "--noise-background-ratio", type=float, default=0.7,
