@@ -128,14 +128,14 @@ class KanjiRecognizerGeneratedDataset(IterableDataset):
     # TODO: Add random lines to image, also in same color as text
     # TODO: Legible text is more common than completely illegible text
     # TODO: Italic
-    def __init__(self, fonts_folder: str, side_text=True, noise_background_ratio=True, characters=kanji.jouyou_kanji,
+    def __init__(self, fonts_folder: str, side_text_ratio=1.0, noise_background_ratio=1.0, characters=kanji.jouyou_kanji,
                  transform=None):
         super(KanjiRecognizerGeneratedDataset).__init__()
         self.font_infos = font_infos(characters, fonts_folder)
         self.transform = transform
         self.character_index = 0
         self.characters = characters
-        self.side_text = side_text
+        self.side_text_ratio = side_text_ratio
         self.noise_background_ratio = noise_background_ratio
         self.id = 'recognizer-3'
 
@@ -152,7 +152,7 @@ class KanjiRecognizerGeneratedDataset(IterableDataset):
         font_size = randint(12, 22)
         font = ImageFont.truetype(font_info['path'], font_size)
 
-        if self.side_text:
+        if random.random() < self.side_text_ratio:
             before = random.choice(tuple(font_info['supported_glyphs']))
             after = random.choice(tuple(font_info['supported_glyphs']))
             text = before + character + after

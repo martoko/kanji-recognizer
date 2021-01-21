@@ -2,7 +2,6 @@ from torch import nn
 import torch.nn.functional as F
 
 
-# TODO: Idea supply inverted image
 class KanjiRecognizer(nn.Module):
     def __init__(self, output_dimensions: int):
         super(KanjiRecognizer, self).__init__()
