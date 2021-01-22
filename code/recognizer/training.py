@@ -64,7 +64,7 @@ def run(args):
             return self.__class__.__name__ + '(mean={0}, std={1})'.format(self.mean, self.std)
 
     adversarial_transform = transforms.Compose([
-        transforms.RandomCrop((32, 32)),
+        transforms.RandomResizedCrop((32, 32), scale=(0.9, 1.1)),
         transforms.ColorJitter(*args.color_jitter),
         transforms.Lambda(lambda img: PIL.ImageOps.invert(img) if random.random() > 0.5 else img),
         transforms.ToTensor(),
@@ -72,8 +72,7 @@ def run(args):
     ])
 
     plain_transform = transforms.Compose([
-        transforms.CenterCrop((28, 28)),
-        transforms.Resize((32, 32)),
+        transforms.CenterCrop((32, 32)),
         transforms.ToTensor()
     ])
 
@@ -89,7 +88,10 @@ def run(args):
         transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
     ])
 
-    trainset = KanjiRecognizerGeneratedDataset(args.fonts_folder, noise_background_ratio=args.noise_background_ratio,
+    trainset = KanjiRecognizerGeneratedDataset(args.fonts_folder, args.background_images_folder,
+                                               noise_background_weight=args.bg_noise_weight,
+                                               img_background_weight=args.bg_image_weight,
+                                               plain_background_weight=args.bg_plain_weight,
                                                side_text_ratio=args.side_text_ratio, characters=characters,
                                                transform=train_transform)
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=args.batch_size, pin_memory=cuda_is_available,
@@ -344,8 +346,12 @@ if __name__ == "__main__":
                         help="how many seconds between logging (default: 600)")
     parser.add_argument("-s", "--side-text-ratio", type=float, default=0.9,
                         help="generate artifacts in training images from text before/after (default: 0.9)")
-    parser.add_argument("-g", "--noise-background-ratio", type=float, default=0.4,
-                        help="percentage of images whose background is random noise (default: 0.4)")
+    parser.add_argument("--bg-plain-weight", type=float, default=1,
+                        help="weight of images whose background are a single color (default: 1)")
+    parser.add_argument("--bg-noise-weight", type=float, default=3,
+                        help="weight of images whose background consist of random noise (default: 3)")
+    parser.add_argument("--bg-image-weight", type=float, default=5,
+                        help="weight of images whose background is a random crop of a real image (default: 5)")
     parser.add_argument("-n", "--name", type=str,
                         help="name of the run (default: auto generated)")
     parser.add_argument("-r", "--resume", type=str, default=False,

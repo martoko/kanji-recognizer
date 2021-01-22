@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+python code/datasets.py
+while inotifywait -e modify,create,delete,move code/datasets.py; do
+  python code/datasets.py
+done
