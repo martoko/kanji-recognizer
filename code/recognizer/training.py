@@ -258,15 +258,6 @@ def run(args):
 
     print("Finished Training")
 
-    if args.output_path is not None:
-        # TODO: Save a full checkpoint, allow resuming, this includes saving batch/samples processed so far
-        print(f"Saving model to {args.output_path}")
-        pathlib.Path(args.output_path).parent.mkdir(parents=True, exist_ok=True)
-        torch.save(model.state_dict(), args.output_path)
-        wandb.save("data/models/recognizer.pt")
-
-    print("Accuracy of the network: %d %%" % evaluate_train())
-
     def log_examples(count=10):
         with torch.no_grad():
             dataiter = iter(trainloader)
