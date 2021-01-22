@@ -338,8 +338,8 @@ if __name__ == "__main__":
                         help="the learning rate of the the optimizer (default: 1e-4)")
     parser.add_argument("-j", "--color-jitter", nargs='+', type=float, default=[0.1, 0.1, 0.1, 0.1],
                         help="brightness, contrast, saturation, hue passed onto the color jitter transform (default: 0.1, 0.1, 0.1, 0.1)")
-    parser.add_argument("-N", "--noise", nargs='+', type=float, default=[0, 0.0005],
-                        help="mean, std of gaussian noise transform (default: 0, 0.0005)")
+    parser.add_argument("-N", "--noise", nargs='+', type=float, default=[0, 0.0007],
+                        help="mean, std of gaussian noise transform (default: 0, 0.0007)")
     parser.add_argument("-c", "--character-set", type=str, default="frequent_kanji_plus",
                         help="name of characters to use (default: frequent_kanji_plus)")
     parser.add_argument("-F", "--log-frequency", type=float, default=600,
