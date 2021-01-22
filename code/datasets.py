@@ -332,7 +332,7 @@ if __name__ == '__main__':
             sample.save(f"data/generated/{dataset.id}/{i}.png")
 
 
-    def normalization_data(dataset, name, count=10000):
+    def normalization_data(dataset, name, count=4000):
         pixels = np.array([])
         iterator = iter(dataset)
         for i in range(count):
@@ -343,7 +343,7 @@ if __name__ == '__main__':
         print(f"{name}: mean {pixels.mean()}, std: {pixels.std()}")
 
 
-    # normalization_data(RecognizerGeneratedDataset("data/fonts", characters=kanji.frequent_kanji_plus), "recognizer")
+    # normalization_data(KanjiRecognizerGeneratedDataset("data/fonts", "data/background-images", characters=kanji.frequent_kanji_plus), "recognizer")
     # normalization_data(BoxerDataset("data/fonts", "data/background-images"), "boxer")
     # normalization_data(HiraganaDataset("data/fonts", "data/background-images"), "hiragana")
 

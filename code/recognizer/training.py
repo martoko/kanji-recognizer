@@ -50,7 +50,7 @@ def run(args):
     characters = character_set_from_name(args.character_set)
 
     def denormalize(img):
-        return img / 0.5 + 0.5
+        return img / 0.28 + 0.63
 
     class GaussianNoise(object):
         def __init__(self, mean=0.0, std=0.1):
@@ -78,14 +78,14 @@ def run(args):
 
     train_transform = transforms.Compose([
         transforms.Lambda(lambda img: adversarial_transform(img) if random.random() > 0.1 else plain_transform(img)),
-        transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
+        transforms.Normalize(mean=(0.63, 0.63, 0.63), std=(0.28, 0.28, 0.28))
         # recognizer: mean 0.8515397726034853, std: 0.2013882252859569
     ])
 
     test_transform = transforms.Compose([
         transforms.Resize(size=(32, 32), interpolation=PIL.Image.NEAREST),
         transforms.ToTensor(),
-        transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
+        transforms.Normalize(mean=(0.63, 0.63, 0.63), std=(0.28, 0.28, 0.28))
     ])
 
     trainset = KanjiRecognizerGeneratedDataset(args.fonts_folder, args.background_images_folder,
