@@ -64,26 +64,25 @@ def run(args):
             return self.__class__.__name__ + '(mean={0}, std={1})'.format(self.mean, self.std)
 
     adversarial_transform = transforms.Compose([
-        transforms.RandomResizedCrop((32, 32), scale=(0.9, 1.1)),
+        transforms.RandomCrop((32, 32)),
         transforms.ColorJitter(*args.color_jitter),
         transforms.Lambda(lambda img: PIL.ImageOps.invert(img) if random.random() > 0.5 else img),
         transforms.ToTensor(),
         GaussianNoise(*args.noise)
     ])
 
-    plain_transform = transforms.Compose([
+    center_transform = transforms.Compose([
         transforms.CenterCrop((32, 32)),
         transforms.ToTensor()
     ])
 
     train_transform = transforms.Compose([
-        transforms.Lambda(lambda img: adversarial_transform(img) if random.random() > 0.1 else plain_transform(img)),
+        transforms.Lambda(lambda img: adversarial_transform(img) if random.random() > 0.1 else center_transform(img)),
         transforms.Normalize(mean=(0.63, 0.63, 0.63), std=(0.28, 0.28, 0.28))
-        # recognizer: mean 0.8515397726034853, std: 0.2013882252859569
     ])
 
     test_transform = transforms.Compose([
-        transforms.Resize(size=(32, 32), interpolation=PIL.Image.NEAREST),
+        transforms.Resize(size=(32, 32)),
         transforms.ToTensor(),
         transforms.Normalize(mean=(0.63, 0.63, 0.63), std=(0.28, 0.28, 0.28))
     ])
@@ -94,8 +93,7 @@ def run(args):
                                                plain_background_weight=args.bg_plain_weight,
                                                side_text_ratio=args.side_text_ratio, characters=characters,
                                                transform=train_transform)
-    trainloader = torch.utils.data.DataLoader(trainset, batch_size=args.batch_size, pin_memory=cuda_is_available,
-                                              num_workers=8)
+    trainloader = torch.utils.data.DataLoader(trainset, batch_size=args.batch_size, pin_memory=cuda_is_available)
     testset = RecognizerTestDataset(args.test_folder, characters=characters, transform=test_transform)
     testloader = torch.utils.data.DataLoader(testset, batch_size=args.batch_size)
     wandb.config.update({"dataset": trainset.id})

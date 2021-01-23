@@ -10,6 +10,8 @@ import numpy as np
 from PIL import ImageFont, Image, ImageFile, ImageDraw, ImageStat
 from torch.utils.data import IterableDataset, Dataset
 from torch.utils.data.dataset import T_co
+from torchvision import transforms
+
 import kanji
 from fontTools.ttLib import TTFont
 
@@ -343,10 +345,26 @@ if __name__ == '__main__':
         print(f"{name}: mean {pixels.mean()}, std: {pixels.std()}")
 
 
+    adversarial_transform = transforms.Compose([
+        transforms.RandomCrop((32, 32)),
+        transforms.ColorJitter(0.1, 0.1, 0.1),
+        transforms.Lambda(lambda img: PIL.ImageOps.invert(img) if random.random() > 0.5 else img),
+    ])
+
+    plain_transform = transforms.Compose([
+        transforms.CenterCrop((32, 32)),
+    ])
+
+    train_transform = transforms.Compose([
+        transforms.Lambda(lambda img: adversarial_transform(img) if random.random() > 0.1 else plain_transform(img)),
+    ])
+
     # normalization_data(KanjiRecognizerGeneratedDataset("data/fonts", "data/background-images", characters=kanji.frequent_kanji_plus), "recognizer")
     # normalization_data(BoxerDataset("data/fonts", "data/background-images"), "boxer")
     # normalization_data(HiraganaDataset("data/fonts", "data/background-images"), "hiragana")
 
-    generate(KanjiRecognizerGeneratedDataset("data/fonts", "data/background-images", characters=kanji.frequent_kanji_plus), count=100)
+    generate(
+        KanjiRecognizerGeneratedDataset("data/fonts", "data/background-images", characters=kanji.frequent_kanji_plus,
+                                        transform=train_transform), count=100)
     # generate(BoxerDataset("data/fonts", "data/background-images"), "boxer")
     # generate(HiraganaDataset("data/fonts", "data/background-images"), "hiragana")
