@@ -20,7 +20,6 @@ ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 def font_paths(folder):
     return glob.glob(os.path.join(folder, '**/*.ttf'), recursive=True) + \
-           glob.glob(os.path.join(folder, '**/*.ttc'), recursive=True) + \
            glob.glob(os.path.join(folder, '**/*.otf'), recursive=True)
 
 
