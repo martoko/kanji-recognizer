@@ -72,7 +72,8 @@ def run(args):
     ])
 
     center_transform = transforms.Compose([
-        transforms.CenterCrop((32, 32)),
+        transforms.CenterCrop((28, 28)),
+        transforms.Resize((32, 32)),
         transforms.ToTensor()
     ])
 

@@ -187,6 +187,7 @@ class KanjiRecognizerGeneratedDataset(IterableDataset):
             return Image.new('RGB', (width, height), color=random_white_color())
 
     def generate(self):
+        # Perfectly cropped B&W images
         character = self.characters[self.character_index]
         label = self.character_index
         font_info = random.choice(self.fonts_supporting_glyph(character))
@@ -352,7 +353,8 @@ if __name__ == '__main__':
     ])
 
     plain_transform = transforms.Compose([
-        transforms.CenterCrop((32, 32)),
+        transforms.CenterCrop((28, 28)),
+        transforms.Resize((32, 32))
     ])
 
     train_transform = transforms.Compose([
@@ -365,6 +367,6 @@ if __name__ == '__main__':
 
     generate(
         KanjiRecognizerGeneratedDataset("data/fonts", "data/background-images", characters=kanji.frequent_kanji_plus,
-                                        transform=train_transform), count=100)
+                                        transform=plain_transform), count=100)
     # generate(BoxerDataset("data/fonts", "data/background-images"), "boxer")
     # generate(HiraganaDataset("data/fonts", "data/background-images"), "hiragana")
