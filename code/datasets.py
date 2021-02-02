@@ -73,6 +73,121 @@ def random_black_color():
     return randint(0, 50), randint(0, 50), randint(0, 50)
 
 
+class KanjiBoxerGeneratedDataset(IterableDataset):
+    # TODO: Rotate/morph/skew
+    # TODO: Other characters as part of background?
+    # TODO: Add a small random padding/cropping to be more resistant to faulty cropping
+    # TODO: Add random lines to image, also in same color as text
+    # TODO: Legible text is more common than completely illegible text
+    # TODO: Italic
+    def __init__(self, fonts_folder: str,
+                 background_image_folder: str,
+                 img_background_weight=1,
+                 noise_background_weight=1,
+                 plain_background_weight=1,
+                 border_ratio=0.5,
+                 characters=kanji.jouyou_kanji, transform=None):
+        super(KanjiRecognizerGeneratedDataset).__init__()
+        self.font_infos = font_infos(characters, fonts_folder)
+        self.transform = transform
+        self.character_index = 0
+        self.characters = characters
+        self.plain_background_weight = plain_background_weight
+        self.noise_background_weight = noise_background_weight
+        self.img_background_weight = img_background_weight
+        self.border_ratio = border_ratio
+        self.background_images = [
+            Image.open(os.path.join(background_image_folder, name))
+            for name in os.listdir(background_image_folder)
+            if os.path.isfile(os.path.join(background_image_folder, name))
+        ]
+        self.id = 'boxer-2'
+
+    def fonts_supporting_glyph(self, glyph):
+        return [info for info in self.font_infos if glyph in info['supported_glyphs']]
+
+    def random_noise(self, width, height):
+        return Image.fromarray(np.random.randint(0, 255, (width, height, 3), dtype=np.dtype('uint8')))
+
+    def background_image(self, width, height):
+        background = random.choice(self.background_images)
+
+        bg_left = randint(0, background.width - 2)
+        bg_right = randint(bg_left + 1, background.width)
+        bg_top = randint(0, background.height - 2)
+        bg_bottom = randint(bg_top + 1, background.height)
+
+        return background.resize(
+            (width, height), box=(bg_left, bg_top, bg_right, bg_bottom)
+        )
+
+    def generate_background(self, width, height):
+        choice = random.choices(["noise", "img", "plain"],
+                                weights=[self.noise_background_weight, self.img_background_weight,
+                                         self.plain_background_weight])[0]
+
+        if choice == "noise":
+            return self.random_noise(width, height)
+        elif choice == "img":
+            return self.background_image(width, height)
+        else:
+            return Image.new('RGB', (width, height), color=random_white_color())
+
+    def generate(self):
+        # Perfectly cropped B&W images
+        character = self.characters[self.character_index]
+        font_info = random.choice(self.fonts_supporting_glyph(character))
+        font_size = randint(8, 32)
+        font = ImageFont.truetype(font_info['path'], font_size)
+
+        before = random.choice(tuple(font_info['supported_glyphs']))
+        after = random.choice(tuple(font_info['supported_glyphs']))
+        text = before + character + after
+
+        for character in list(text):
+            left, top, right, bottom = font.getbbox(character, anchor='lt', language='ja')
+            if right == 0 or bottom == 0:
+                print(f"{character} is missing from {os.path.basename(font_info['path'])}")
+                exit(-1)
+
+        left, top, right, bottom = font.getbbox(text, anchor='lt', language='ja')
+
+        sample = self.generate_background(32, 32)
+        drawing = ImageDraw.Draw(sample)
+        x_offset = randint(-int((right / 3) / 2), int((right / 3) / 2))
+        y_offset = randint(-int(bottom / 2), int(bottom / 2))
+        drawing.text((16 + x_offset, 16 + y_offset), text, font=font,
+                     fill=random_color(), anchor='mm',
+                     language='ja')
+        label = [
+            (16 + x_offset - right / 3 / 2),
+            (16 + y_offset - bottom / 2),
+            (16 + x_offset + right / 3 / 2),
+            (16 + y_offset + bottom / 2)
+        ]
+        drawing = ImageDraw.Draw(sample)
+        # drawing.rectangle(label, outline=(255, 0, 0))
+        # drawing.point((16, 16), fill=(255, 0, 0))
+
+        if label[0] < 0: label[0] = 0
+        if label[1] < 0: label[1] = 0
+        if label[2] > 31: label[0] = 31
+        if label[3] > 31: label[1] = 31
+
+        self.character_index = (self.character_index + 1) % len(self.characters)
+        if self.transform is None:
+            return sample, label
+        else:
+            return self.transform(sample), label
+
+    def __iter__(self) -> Iterator[T_co]:
+        while True:
+            yield self.generate()
+
+    def __getitem__(self, index) -> T_co:
+        return self.generate()
+
+
 class BoxerDataset(IterableDataset):
     def __init__(self, fonts_folder: str, background_image_folder: str, transform=None):
         super(BoxerDataset).__init__()
@@ -364,8 +479,11 @@ if __name__ == '__main__':
     # normalization_data(BoxerDataset("data/fonts", "data/background-images"), "boxer")
     # normalization_data(HiraganaDataset("data/fonts", "data/background-images"), "hiragana")
 
+    # generate(
+    #     KanjiRecognizerGeneratedDataset("data/fonts", "data/background-images", characters=kanji.frequent_kanji_plus,
+    #                                     transform=plain_transform), count=100)
     generate(
-        KanjiRecognizerGeneratedDataset("data/fonts", "data/background-images", characters=kanji.frequent_kanji_plus,
-                                        transform=plain_transform), count=100)
+        KanjiBoxerGeneratedDataset("data/fonts", "data/background-images", characters=kanji.frequent_kanji_plus,
+                                   transform=None), count=100)
     # generate(BoxerDataset("data/fonts", "data/background-images"), "boxer")
     # generate(HiraganaDataset("data/fonts", "data/background-images"), "hiragana")
