@@ -14,6 +14,7 @@ import torch.optim as optim
 import torchvision
 import torchvision.transforms as transforms
 import wandb
+import torchvision.models as models
 
 import kanji
 from datasets import KanjiRecognizerGeneratedDataset, RecognizerTestDataset
@@ -99,7 +100,10 @@ def run(args):
     testloader = torch.utils.data.DataLoader(testset, batch_size=args.batch_size)
     wandb.config.update({"dataset": trainset.id})
 
-    model = KanjiRecognizer(output_dimensions=len(trainset.characters)).to(device)
+    if args.res_net:
+        model = models.resnet152(num_classes=len(trainset.characters)).to(device)
+    else:
+        model = KanjiRecognizer(output_dimensions=len(trainset.characters)).to(device)
     wandb.watch(model)
     if args.input_path is not None and os.path.exists(args.input_path):
         print(f"Loading checkpoint from {args.input_path}")
@@ -355,4 +359,6 @@ if __name__ == "__main__":
                         help="name of the run (default: auto generated)")
     parser.add_argument("-r", "--resume", type=str, default=False,
                         help="resumes a previous run given a run id or run path")
+    parser.add_argument('--res-net', action='store_const', const=True, default=False,
+                        help='use a resnet model (default: False)')
     run(parser.parse_args())
