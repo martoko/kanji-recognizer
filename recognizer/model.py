@@ -1,15 +1,11 @@
-import argparse
-
 import pytorch_lightning as pl
 import torch
 import torchvision
 import wandb
-from pytorch_lightning.loggers import WandbLogger
 from torch import optim
 from torch.nn import functional as F
 
-from data import character_sets
-from data.data_module import RecognizerDataModule
+from recognizer.data import character_sets
 
 
 class KanjiRecognizer(pl.LightningModule):
