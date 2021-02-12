@@ -66,5 +66,6 @@ if __name__ == '__main__':
             dataset[i][0].save(f"generated/validation/{i}.png")
 
 
-    dataset = dataset_from_folder("data/free-kanji", character_set=character_sets.frequent_kanji_plus)
+    dataset = dataset_from_folder("data", character_set=character_sets.frequent_kanji_plus)
+    print(f"size: {len(dataset)}")
     generate(dataset, count=300)

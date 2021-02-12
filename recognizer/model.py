@@ -48,8 +48,8 @@ class KanjiRecognizer(pl.LightningModule):
         logits, loss = self.loss(images, labels)
         predictions = torch.argmax(logits, 1)
 
-        self.log('valid/loss', loss)
-        self.log('valid/acc', self.accuracy(predictions, labels))
+        self.log('val/loss', loss)
+        self.log('val/acc', self.accuracy(predictions, labels))
 
         return logits
 
@@ -61,7 +61,7 @@ class KanjiRecognizer(pl.LightningModule):
 
         flattened_logits = torch.flatten(torch.cat(validation_step_outputs))
         self.logger.experiment.log({
-            'valid/logits': wandb.Histogram(flattened_logits.to('cpu'))
+            'val/logits': wandb.Histogram(flattened_logits.to('cpu'))
         })
 
     def test_step(self, batch, batch_index):
