@@ -11,6 +11,8 @@ from fontTools.ttLib import TTFont
 from torch.utils.data import IterableDataset
 from torch.utils.data.dataset import T_co
 
+from recognizer.data import character_sets
+
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 
@@ -66,6 +68,10 @@ def random_black_color():
     return randint(0, 50), randint(0, 50), randint(0, 50)
 
 
+def random_noise(width, height):
+    return Image.fromarray(np.random.randint(0, 255, (width, height, 3), dtype=np.dtype('uint8')))
+
+
 class RecognizerTrainingDataset(IterableDataset):
     # TODO: Rotate/morph/skew (common one is squishing the characters to fit more on one line)
     # TODO: Other characters as part of background?
@@ -74,11 +80,9 @@ class RecognizerTrainingDataset(IterableDataset):
     # TODO: Italic
     def __init__(self, data_folder: str,
                  character_set: List[str],
-                 side_text_ratio=0.5,
                  img_background_weight=1,
                  noise_background_weight=1,
-                 plain_background_weight=1,
-                 border_ratio=0.5, transform=None):
+                 plain_background_weight=1, transform=None):
         super().__init__()
         fonts_folder = os.path.join(data_folder, "fonts")
         background_images_folder = os.path.join(data_folder, "backgrounds")
@@ -86,25 +90,19 @@ class RecognizerTrainingDataset(IterableDataset):
         self.transform = transform
         self.character_index = 0
         self.characters = character_set
-        self.side_text_ratio = side_text_ratio
         self.plain_background_weight = plain_background_weight
         self.noise_background_weight = noise_background_weight
         self.img_background_weight = img_background_weight
-        self.border_ratio = border_ratio
         self.background_images = [
             Image.open(os.path.join(background_images_folder, name))
             for name in os.listdir(background_images_folder)
             if os.path.isfile(os.path.join(background_images_folder, name))
         ]
-        self.padding = 3
 
     def fonts_supporting_glyph(self, glyph):
         return [info for info in self.font_infos if glyph in info['supported_glyphs']]
 
-    def random_noise(self, width, height):
-        return Image.fromarray(np.random.randint(0, 255, (width, height, 3), dtype=np.dtype('uint8')))
-
-    def background_image(self, width, height):
+    def random_background_image(self, width, height):
         background = random.choice(self.background_images)
 
         bg_left = randint(0, background.width - 2)
@@ -122,65 +120,41 @@ class RecognizerTrainingDataset(IterableDataset):
                                          self.plain_background_weight])[0]
 
         if choice == "noise":
-            return self.random_noise(width, height)
+            return random_noise(width, height)
         elif choice == "img":
-            return self.background_image(width, height)
+            return self.random_background_image(width, height)
         else:
             return Image.new('RGB', (width, height), color=random_white_color())
 
     def generate(self):
-        # Perfectly cropped B&W images
         character = self.characters[self.character_index]
         label = self.character_index
         font_info = random.choice(self.fonts_supporting_glyph(character))
-        font_size = randint(12, 22)
+        font_size = int(random.choices([np.random.normal(15, 3), np.random.normal(20, 3), np.random.normal(35, 3)],
+                                       weights=[10, 3, 1])[0])
+        font_size = max(8, font_size)
         font = ImageFont.truetype(font_info['path'], font_size)
 
-        if random.random() < self.side_text_ratio:
-            before = random.choice(tuple(font_info['supported_glyphs']))
-            after = random.choice(tuple(font_info['supported_glyphs']))
-            text = before + character + after
+        before = random.choice(tuple(font_info['supported_glyphs']))
+        after = random.choice(tuple(font_info['supported_glyphs']))
+        text = before + character + after
 
-            for character in list(text):
-                left, top, right, bottom = font.getbbox(character, anchor='lt', language='ja')
-                if right == 0 or bottom == 0:
-                    print(f"{character} is missing from {os.path.basename(font_info['path'])}")
-                    exit(-1)
-
-            left, top, right, bottom = font.getbbox(text, anchor='lt', language='ja')
-
-            sample = self.generate_background(round(right / 3) + 2 * self.padding, bottom + 2 * self.padding)
-            drawing = ImageDraw.Draw(sample)
-            drawing.text((self.padding - right / 3, self.padding), text, font=font, fill=random_color(), anchor='lt',
-                         language='ja')
-            sample = sample.resize((32 + 2 * self.padding, 32 + 2 * self.padding))
-        else:
+        for character in list(text):
             left, top, right, bottom = font.getbbox(character, anchor='lt', language='ja')
             if right == 0 or bottom == 0:
-                print(f"{character} is missing from {os.path.basename(font['path'])}")
+                print(f"{character} is missing from {os.path.basename(font_info['path'])}")
                 exit(-1)
 
-            sample = self.generate_background(right + 2 * self.padding, bottom + 2 * self.padding)
-            drawing = ImageDraw.Draw(sample)
+        left, top, right, bottom = font.getbbox(text, anchor='lt', language='ja')
 
-            if random.random() < self.border_ratio:
-                border_color = random.choice([random_white_color(), random_color()])
+        character_width = right / 3
+        character_height = bottom
+        x_offset = int(((character_width / 2) - random.random() * character_width) * 0.8)
+        y_offset = int(((character_height / 2) - random.random() * character_height) * 0.8)
 
-                # thin border
-                drawing.text((self.padding - 1, self.padding), character, anchor='lt', font=font, fill=border_color)
-                drawing.text((self.padding + 1, self.padding), character, anchor='lt', font=font, fill=border_color)
-                drawing.text((self.padding, self.padding - 1), character, anchor='lt', font=font, fill=border_color)
-                drawing.text((self.padding, self.padding + 1), character, anchor='lt', font=font, fill=border_color)
-
-                # thicker border
-                drawing.text((self.padding - 1, self.padding - 1), character, anchor='lt', font=font, fill=border_color)
-                drawing.text((self.padding + 1, self.padding - 1), character, anchor='lt', font=font, fill=border_color)
-                drawing.text((self.padding - 1, self.padding + 1), character, anchor='lt', font=font, fill=border_color)
-                drawing.text((self.padding + 1, self.padding + 1), character, anchor='lt', font=font, fill=border_color)
-
-            drawing.text((self.padding, self.padding), character, font=font, fill=random_color(), anchor='lt',
-                         language='ja')
-            sample = sample.resize((32 + 2 * self.padding, 32 + 2 * self.padding))
+        sample = self.generate_background(128, 128)
+        drawing = ImageDraw.Draw(sample)
+        drawing.text((64 + x_offset, 64 + y_offset), text, font=font, fill=random_color(), anchor='mm', language='ja')
 
         self.character_index = (self.character_index + 1) % len(self.characters)
         if self.transform is None:
@@ -208,6 +182,5 @@ if __name__ == '__main__':
             sample.save(f"generated/training/{i}.png")
 
 
-    # dataset = RecognizerTrainingDataset(fonts_folder="data/fonts", background_image_folder="data/backgrounds",
-    #                                     character_set=character_sets.kanji.frequent_kanji_plus)
-    generate(dataset, count=100)
+    dataset = RecognizerTrainingDataset(data_folder="data", character_set=character_sets.frequent_kanji_plus)
+    generate(dataset, count=200)
