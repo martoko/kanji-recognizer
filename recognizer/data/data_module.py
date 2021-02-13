@@ -14,7 +14,7 @@ class RecognizerDataModule(pl.LightningDataModule):
     val: ConcatDataset
     test: ConcatDataset
 
-    def __init__(self, data_folder: str, batch_size: int, character_set_name: str, **kwargs):
+    def __init__(self, data_folder: str, batch_size: int, character_set_name: str, num_workers: int, **kwargs):
         super().__init__()
         self.data_folder = data_folder
         self.transform = transforms.Compose([
@@ -23,6 +23,7 @@ class RecognizerDataModule(pl.LightningDataModule):
         ])
         self.batch_size = batch_size
         self.character_set = character_sets.character_sets[character_set_name]
+        self.num_workers = num_workers
 
     def prepare_data(self, *args, **kwargs):
         pass
@@ -48,10 +49,10 @@ class RecognizerDataModule(pl.LightningDataModule):
             )
 
     def train_dataloader(self, *args, **kwargs) -> DataLoader:
-        return DataLoader(self.train, batch_size=self.batch_size, num_workers=4)
+        return DataLoader(self.train, batch_size=self.batch_size, num_workers=self.num_workers)
 
     def val_dataloader(self, *args, **kwargs) -> Union[DataLoader, List[DataLoader]]:
-        return DataLoader(self.val, batch_size=self.batch_size, num_workers=4)
+        return DataLoader(self.val, batch_size=self.batch_size, num_workers=self.num_workers)
 
     def test_dataloader(self, *args, **kwargs) -> Union[DataLoader, List[DataLoader]]:
-        return DataLoader(self.test, batch_size=self.batch_size, num_workers=4)
+        return DataLoader(self.test, batch_size=self.batch_size, num_workers=self.num_workers)
