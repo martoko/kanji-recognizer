@@ -29,4 +29,3 @@ if __name__ == "__main__":
     trainer = pl.Trainer.from_argparse_args(args, logger=WandbLogger())
     model = KanjiRecognizer(**vars(args))
     trainer.fit(model, datamodule=datamodule)
-    trainer.test(datamodule=datamodule, ckpt_path=None)
