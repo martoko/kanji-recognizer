@@ -50,7 +50,9 @@ class RecognizerValidationSingleImageDataset(Dataset):
 def dataset_from_folder(data_folder, character_set, transform=None):
     paths = glob.glob(os.path.join(data_folder, "free-kanji", '**/*.png'), recursive=True)
     datasets = [RecognizerValidationSingleImageDataset(path, character_set, transform) for path in paths]
-    return ConcatDataset(datasets)
+    dataset = ConcatDataset(datasets)
+    assert len(dataset) > 0
+    return dataset
 
 
 if __name__ == '__main__':

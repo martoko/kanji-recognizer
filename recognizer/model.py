@@ -46,38 +46,18 @@ class KanjiRecognizer(pl.LightningModule):
     def validation_step(self, batch, batch_index):
         images, labels = batch
         logits, loss = self.loss(images, labels)
-        predictions = torch.argmax(logits, 1)
 
         self.log('val/loss', loss)
-        self.log('val/acc', self.accuracy(predictions, labels))
+        self.log('val/acc', self.accuracy(logits, labels))
 
-        return logits
-
-    def validation_epoch_end(self, validation_step_outputs):
-        # dummy_input = torch.zeros(1, 3, 32, 32, device=self.device)
-        # filename = f'model_{str(self.logger.step).zfill(5)}.onnx'
-        # torch.onnx.export(self, dummy_input, filename)
-        # wandb.save(filename)
-
-        flattened_logits = torch.flatten(torch.cat(validation_step_outputs))
-        self.logger.experiment.log({
-            'val/logits': wandb.Histogram(flattened_logits.to('cpu'))
-        })
+        return loss
 
     def test_step(self, batch, batch_index):
         images, labels = batch
         logits, loss = self.loss(images, labels)
-        predictions = torch.argmax(logits, 1)
 
         self.log('test/loss', loss)
-        self.log('test/acc', self.accuracy(predictions, labels))
-
-    def test_epoch_end(self, test_step_outputs):
-        # dummy_input = torch.zeros(1\, 3, 32, 32, device=self.device)
-        # filename = 'model_final.onnx'
-        # torch.onnx.export(self, dummy_input, filename)
-        # wandb.save(filename)
-        pass
+        self.log('test/acc', self.accuracy(logits, labels))
 
 
 class ImagePredictionLogger(pl.Callback):
