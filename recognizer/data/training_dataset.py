@@ -169,10 +169,12 @@ class RecognizerTrainingDataset(IterableDataset):
     def generate(self):
         low = math.floor(self.stage)
         high = low + 1
-        if random.random() > high - low:
-            stage = high
-        else:
+        if random.random() > self.stage - math.floor(self.stage):
             stage = low
+        else:
+            stage = high
+
+        stage = min(stage, 2)
 
         if stage == 0:
             return self.generate_stage_0()

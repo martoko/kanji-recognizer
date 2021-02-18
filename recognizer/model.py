@@ -50,11 +50,15 @@ class KanjiRecognizer(pl.LightningModule):
         self.log('val/loss', loss)
         accuracy = self.accuracy(logits, labels)
         self.log('val/acc', accuracy)
-        if accuracy > 0.50 and self.train_dataloader().dataset.stage + 0.1 < 2:
-            self.train_dataloader().dataset.stage += 0.1
-        self.log('train/stage', self.train_dataloader().dataset.stage)
 
-        return loss
+        return loss, accuracy
+
+    def validation_step_end(self, validation_step_average):
+        loss, accuracy = validation_step_average
+        dataset = self.train_dataloader().dataset
+        if accuracy > 0.5:
+            dataset.stage += 0.1
+        self.log('train/stage', dataset.stage)
 
     def test_step(self, batch, batch_index):
         images, labels = batch

@@ -29,7 +29,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     datamodule = RecognizerDataModule(**vars(args))
-    datamodule.setup()
     trainer = pl.Trainer.from_argparse_args(args, logger=WandbLogger())
     model = KanjiRecognizer(**vars(args))
     trainer.fit(model, datamodule=datamodule)
