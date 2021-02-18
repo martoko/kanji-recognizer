@@ -48,7 +48,11 @@ class KanjiRecognizer(pl.LightningModule):
         logits, loss = self.loss(images, labels)
 
         self.log('val/loss', loss)
-        self.log('val/acc', self.accuracy(logits, labels))
+        accuracy = self.accuracy(logits, labels)
+        self.log('val/acc', accuracy)
+        if accuracy > 0.50 and self.datamodule.train.stage < 1:
+            self.datamodule.train.stage += 0.1
+        self.log('train/stage', self.datamodule.train.stage)
 
         return loss
 

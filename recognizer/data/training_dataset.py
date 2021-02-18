@@ -1,4 +1,5 @@
 import glob
+import math
 import os
 import pathlib
 import random
@@ -146,15 +147,41 @@ class RecognizerTrainingDataset(IterableDataset):
             return self.transform(sample), label
 
     def generate_stage_1(self):
-        pass
+        character = self.characters[self.character_index]
+        label = self.character_index
+        font_info = random.choice(self.fonts_supporting_glyph(character))
+        font_size = int(random.choices([np.random.normal(15, 3), np.random.normal(20, 3), np.random.normal(35, 3)],
+                                       weights=[10, 3, 1])[0])
+        font_size = max(8, font_size)
+        font = ImageFont.truetype(font_info['path'], font_size)
+
+        _, _, width, height = font.getbbox(character, anchor='lt', language='ja')
+        sample = Image.new('RGB', (128, 128), color=random_white_color())
+        drawing = ImageDraw.Draw(sample)
+        drawing.text((64, 64), character, font=font, fill=random_color(), anchor='mm', language='ja')
+
+        self.character_index = (self.character_index + 1) % len(self.characters)
+        if self.transform is None:
+            return sample, label
+        else:
+            return self.transform(sample), label
 
     def generate(self):
-        if self.stage == 0:
-            return self.generate_stage_0()
-        if self.stage == 1:
-            return self.generate_stage_1()
+        low = math.floor(self.stage)
+        high = low + 1
+        if random.random() > high - low:
+            stage = high
+        else:
+            stage = low
 
-    def generate_old(self):
+        if stage == 0:
+            return self.generate_stage_0()
+        if stage == 1:
+            return self.generate_stage_1()
+        if stage == 2:
+            return self.generate_stage_2()
+
+    def generate_stage_2(self):
         character = self.characters[self.character_index]
         label = self.character_index
         font_info = random.choice(self.fonts_supporting_glyph(character))
@@ -199,11 +226,13 @@ class RecognizerTrainingDataset(IterableDataset):
 
 
 if __name__ == '__main__':
+    files = glob.glob(f"generated/training/*/*")
+    for file in files:
+        os.remove(file)
+
+
     def generate(dataset, stage, count=None):
-        dataset.stage = 0
-        files = glob.glob(f"generated/training/*/*")
-        for file in files:
-            os.remove(file)
+        dataset.stage = stage
         pathlib.Path(f"generated/training/{stage}").mkdir(parents=True, exist_ok=True)
         iterator = iter(dataset)
         for i in range(len(dataset.characters) if count is None else count):
@@ -213,3 +242,4 @@ if __name__ == '__main__':
 
     dataset = RecognizerTrainingDataset(data_folder="data", character_set=character_sets.frequent_kanji_plus)
     generate(dataset, 0, count=200)
+    generate(dataset, 1, count=200)
