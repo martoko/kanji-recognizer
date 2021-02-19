@@ -21,7 +21,9 @@ class KanjiRecognizer(pl.LightningModule):
         self.save_hyperparameters()
 
         # Set up accuracy loggers
-        self.accuracy = pl.metrics.Accuracy()
+        self.train_accuracy = pl.metrics.Accuracy()
+        self.val_accuracy = pl.metrics.Accuracy()
+        self.test_accuracy = pl.metrics.Accuracy()
 
     def forward(self, x):
         return self.model(x)
@@ -39,7 +41,7 @@ class KanjiRecognizer(pl.LightningModule):
         logits, loss = self.loss(images, labels)
 
         self.log('train/loss', loss)
-        self.log('train/acc', self.accuracy(logits, labels))
+        self.log('train/acc', self.train_accuracy(F.softmax(logits), labels))
 
         return loss
 
@@ -48,15 +50,14 @@ class KanjiRecognizer(pl.LightningModule):
         logits, loss = self.loss(images, labels)
 
         self.log('val/loss', loss)
-        accuracy = self.accuracy(logits, labels)
+        accuracy = self.val_accuracy(F.softmax(logits), labels)
         self.log('val/acc', accuracy)
 
-        return loss, accuracy
+        return loss
 
-    def validation_step_end(self, validation_step_average):
-        loss, accuracy = validation_step_average
+    def validation_step_end(self, loss):
         dataset = self.train_dataloader().dataset
-        if accuracy > 0.5:
+        if self.train_accuracy.compute() > 0.5:
             dataset.stage += 0.1
         self.log('train/stage', dataset.stage)
 
@@ -65,7 +66,7 @@ class KanjiRecognizer(pl.LightningModule):
         logits, loss = self.loss(images, labels)
 
         self.log('test/loss', loss)
-        self.log('test/acc', self.accuracy(logits, labels))
+        self.log('test/acc', self.test_accuracy(F.softmax(logits), labels))
 
 
 class ImagePredictionLogger(pl.Callback):
