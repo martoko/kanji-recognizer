@@ -19,8 +19,8 @@ if __name__ == "__main__":
                         help="the learning rate of the the optimizer (default: 1e-4)")
     parser.add_argument("--character-set-name", type=str, default="frequent_kanji_plus",
                         help="name of characters to use (default: frequent_kanji_plus)")
-    parser.add_argument("-w", "--num-workers", type=int, default=1,
-                        help="number of workers to apply to data loading (default: 1)")
+    parser.add_argument("-w", "--num-workers", type=int, default=0,
+                        help="number of workers to apply to data loading (default: 0)")
 
     parser.add_argument("-j", "--color-jitter", nargs='+', type=float, default=[0.1, 0.1, 0.1, 0.1],
                         help="brightness, contrast, saturation, hue passed onto the color jitter transform (default: 0.1, 0.1, 0.1, 0.1)")
