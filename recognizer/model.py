@@ -57,8 +57,8 @@ class KanjiRecognizer(pl.LightningModule):
 
     def validation_epoch_end(self, *args):
         dataset = self.train_dataloader().dataset
-        if self.train_accuracy.compute() > 0.5:
-            dataset.stage += 0.01
+        if self.train_accuracy.compute() > 0.8:
+            dataset.stage += 0.1
         self.log('train/stage', dataset.stage)
 
     def test_step(self, batch, batch_index):

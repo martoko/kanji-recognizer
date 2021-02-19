@@ -166,6 +166,65 @@ class RecognizerTrainingDataset(IterableDataset):
         else:
             return self.transform(sample), label
 
+    def generate_stage_2(self):
+        character = self.characters[self.character_index]
+        label = self.character_index
+        font_info = random.choice(self.fonts_supporting_glyph(character))
+        font_size = int(random.choices([np.random.normal(15, 3), np.random.normal(20, 3), np.random.normal(35, 3)],
+                                       weights=[10, 3, 1])[0])
+        font_size = max(8, font_size)
+        font = ImageFont.truetype(font_info['path'], font_size)
+
+        _, _, width, height = font.getbbox(character, anchor='lt', language='ja')
+        x_offset = int(((width / 2) - random.random() * width) * 0.8)
+        y_offset = int(((height / 2) - random.random() * height) * 0.8)
+
+        sample = Image.new('RGB', (128, 128), color=random_white_color())
+        drawing = ImageDraw.Draw(sample)
+        drawing.text((64 + x_offset, 64 + y_offset), character, font=font, fill=random_color(), anchor='mm', language='ja')
+
+        self.character_index = (self.character_index + 1) % len(self.characters)
+        if self.transform is None:
+            return sample, label
+        else:
+            return self.transform(sample), label
+
+    def generate_stage_3(self):
+        character = self.characters[self.character_index]
+        label = self.character_index
+        font_info = random.choice(self.fonts_supporting_glyph(character))
+        font_size = int(random.choices([np.random.normal(15, 3), np.random.normal(20, 3), np.random.normal(35, 3)],
+                                       weights=[10, 3, 1])[0])
+        font_size = max(8, font_size)
+        font = ImageFont.truetype(font_info['path'], font_size)
+
+        before = random.choice(tuple(font_info['supported_glyphs']))
+        after = random.choice(tuple(font_info['supported_glyphs']))
+        text = before + character + after
+
+        for character in list(text):
+            left, top, right, bottom = font.getbbox(character, anchor='lt', language='ja')
+            if right == 0 or bottom == 0:
+                print(f"{character} is missing from {os.path.basename(font_info['path'])}")
+                exit(-1)
+
+        left, top, right, bottom = font.getbbox(text, anchor='lt', language='ja')
+
+        character_width = right / 3
+        character_height = bottom
+        x_offset = int(((character_width / 2) - random.random() * character_width) * 0.8)
+        y_offset = int(((character_height / 2) - random.random() * character_height) * 0.8)
+
+        sample = Image.new('RGB', (128, 128), color=random_white_color())
+        drawing = ImageDraw.Draw(sample)
+        drawing.text((64 + x_offset, 64 + y_offset), text, font=font, fill=random_color(), anchor='mm', language='ja')
+
+        self.character_index = (self.character_index + 1) % len(self.characters)
+        if self.transform is None:
+            return sample, label
+        else:
+            return self.transform(sample), label
+
     def generate(self):
         low = math.floor(self.stage)
         high = low + 1
@@ -174,7 +233,7 @@ class RecognizerTrainingDataset(IterableDataset):
         else:
             stage = high
 
-        stage = min(stage, 2)
+        stage = min(stage, 4)
 
         if stage == 0:
             return self.generate_stage_0()
@@ -182,8 +241,12 @@ class RecognizerTrainingDataset(IterableDataset):
             return self.generate_stage_1()
         if stage == 2:
             return self.generate_stage_2()
+        if stage == 3:
+            return self.generate_stage_3()
+        if stage == 4:
+            return self.generate_stage_4()
 
-    def generate_stage_2(self):
+    def generate_stage_4(self):
         character = self.characters[self.character_index]
         label = self.character_index
         font_info = random.choice(self.fonts_supporting_glyph(character))
@@ -245,3 +308,6 @@ if __name__ == '__main__':
     dataset = RecognizerTrainingDataset(data_folder="data", character_set=character_sets.frequent_kanji_plus)
     generate(dataset, 0, count=200)
     generate(dataset, 1, count=200)
+    generate(dataset, 2, count=200)
+    generate(dataset, 3, count=200)
+    generate(dataset, 4, count=200)
