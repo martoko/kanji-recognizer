@@ -128,6 +128,14 @@ class RecognizerTrainingDataset(IterableDataset):
         else:
             return Image.new('RGB', (width, height), color=random_white_color())
 
+    def random_font_size(self):
+        return int(random.choices([
+            np.random.normal(15, 3),
+            np.random.normal(20, 3),
+            np.random.normal(35, 3),
+            np.random.normal(50, 3)
+        ], weights=[10, 3, 1, 1])[0])
+
     def generate_stage_0(self):
         character = self.characters[self.character_index]
         label = self.character_index
@@ -150,8 +158,7 @@ class RecognizerTrainingDataset(IterableDataset):
         character = self.characters[self.character_index]
         label = self.character_index
         font_info = random.choice(self.fonts_supporting_glyph(character))
-        font_size = int(random.choices([np.random.normal(15, 3), np.random.normal(20, 3), np.random.normal(35, 3)],
-                                       weights=[10, 3, 1])[0])
+        font_size = self.random_font_size()
         font_size = max(8, font_size)
         font = ImageFont.truetype(font_info['path'], font_size)
 
@@ -170,8 +177,7 @@ class RecognizerTrainingDataset(IterableDataset):
         character = self.characters[self.character_index]
         label = self.character_index
         font_info = random.choice(self.fonts_supporting_glyph(character))
-        font_size = int(random.choices([np.random.normal(15, 3), np.random.normal(20, 3), np.random.normal(35, 3)],
-                                       weights=[10, 3, 1])[0])
+        font_size = self.random_font_size()
         font_size = max(8, font_size)
         font = ImageFont.truetype(font_info['path'], font_size)
 
@@ -181,7 +187,8 @@ class RecognizerTrainingDataset(IterableDataset):
 
         sample = Image.new('RGB', (128, 128), color=random_white_color())
         drawing = ImageDraw.Draw(sample)
-        drawing.text((64 + x_offset, 64 + y_offset), character, font=font, fill=random_color(), anchor='mm', language='ja')
+        drawing.text((64 + x_offset, 64 + y_offset), character, font=font, fill=random_color(), anchor='mm',
+                     language='ja')
 
         self.character_index = (self.character_index + 1) % len(self.characters)
         if self.transform is None:
@@ -193,14 +200,56 @@ class RecognizerTrainingDataset(IterableDataset):
         character = self.characters[self.character_index]
         label = self.character_index
         font_info = random.choice(self.fonts_supporting_glyph(character))
+        font_size = self.random_font_size()
+        font_size = max(8, font_size)
+        font = ImageFont.truetype(font_info['path'], font_size)
+
+        before_count = random.randint(0, 10)
+        after_count = random.randint(0, 10)
+        total_count = before_count + after_count + 1
+        before = [random.choice(tuple(font_info['supported_glyphs'])) for _ in range(before_count)]
+        after = [random.choice(tuple(font_info['supported_glyphs'])) for _ in range(after_count)]
+        text = ''.join(before) + character + ''.join(after)
+
+        for character in list(text):
+            left, top, right, bottom = font.getbbox(character, anchor='lt', language='ja')
+            if right == 0 or bottom == 0:
+                print(f"'{character}' is missing from {os.path.basename(font_info['path'])}")
+                exit(-1)
+
+        left, top, right, bottom = font.getbbox(text, anchor='lt', language='ja')
+
+        character_width = right / total_count
+        character_height = bottom
+        x = 64 - character_width / 2 - character_width * before_count
+        x_offset = int(((character_width / 2) - random.random() * character_width) * 0.8)
+        y_offset = int(((character_height / 2) - random.random() * character_height) * 0.8)
+
+        sample = Image.new('RGB', (128, 128), color=random_white_color())
+        drawing = ImageDraw.Draw(sample)
+        drawing.text((x + x_offset, 64 + y_offset), text, font=font, fill=random_color(), anchor='lm', language='ja')
+
+        self.character_index = (self.character_index + 1) % len(self.characters)
+        if self.transform is None:
+            return sample, label
+        else:
+            return self.transform(sample), label
+
+    def generate_stage_4(self):
+        character = self.characters[self.character_index]
+        label = self.character_index
+        font_info = random.choice(self.fonts_supporting_glyph(character))
         font_size = int(random.choices([np.random.normal(15, 3), np.random.normal(20, 3), np.random.normal(35, 3)],
                                        weights=[10, 3, 1])[0])
         font_size = max(8, font_size)
         font = ImageFont.truetype(font_info['path'], font_size)
 
-        before = random.choice(tuple(font_info['supported_glyphs']))
-        after = random.choice(tuple(font_info['supported_glyphs']))
-        text = before + character + after
+        before_count = random.randint(0, 10)
+        after_count = random.randint(0, 10)
+        total_count = before_count + after_count + 1
+        before = [random.choice(tuple(font_info['supported_glyphs'])) for _ in range(before_count)]
+        after = [random.choice(tuple(font_info['supported_glyphs'])) for _ in range(after_count)]
+        text = ''.join(before) + character + ''.join(after)
 
         for character in list(text):
             left, top, right, bottom = font.getbbox(character, anchor='lt', language='ja')
@@ -210,14 +259,15 @@ class RecognizerTrainingDataset(IterableDataset):
 
         left, top, right, bottom = font.getbbox(text, anchor='lt', language='ja')
 
-        character_width = right / 3
+        character_width = right / total_count
         character_height = bottom
+        x = 64 - character_width / 2 - character_width * before_count
         x_offset = int(((character_width / 2) - random.random() * character_width) * 0.8)
         y_offset = int(((character_height / 2) - random.random() * character_height) * 0.8)
 
-        sample = Image.new('RGB', (128, 128), color=random_white_color())
+        sample = self.generate_background(128, 128)
         drawing = ImageDraw.Draw(sample)
-        drawing.text((64 + x_offset, 64 + y_offset), text, font=font, fill=random_color(), anchor='mm', language='ja')
+        drawing.text((x + x_offset, 64 + y_offset), text, font=font, fill=random_color(), anchor='lm', language='ja')
 
         self.character_index = (self.character_index + 1) % len(self.characters)
         if self.transform is None:
@@ -245,42 +295,6 @@ class RecognizerTrainingDataset(IterableDataset):
             return self.generate_stage_3()
         if stage == 4:
             return self.generate_stage_4()
-
-    def generate_stage_4(self):
-        character = self.characters[self.character_index]
-        label = self.character_index
-        font_info = random.choice(self.fonts_supporting_glyph(character))
-        font_size = int(random.choices([np.random.normal(15, 3), np.random.normal(20, 3), np.random.normal(35, 3)],
-                                       weights=[10, 3, 1])[0])
-        font_size = max(8, font_size)
-        font = ImageFont.truetype(font_info['path'], font_size)
-
-        before = random.choice(tuple(font_info['supported_glyphs']))
-        after = random.choice(tuple(font_info['supported_glyphs']))
-        text = before + character + after
-
-        for character in list(text):
-            left, top, right, bottom = font.getbbox(character, anchor='lt', language='ja')
-            if right == 0 or bottom == 0:
-                print(f"{character} is missing from {os.path.basename(font_info['path'])}")
-                exit(-1)
-
-        left, top, right, bottom = font.getbbox(text, anchor='lt', language='ja')
-
-        character_width = right / 3
-        character_height = bottom
-        x_offset = int(((character_width / 2) - random.random() * character_width) * 0.8)
-        y_offset = int(((character_height / 2) - random.random() * character_height) * 0.8)
-
-        sample = self.generate_background(128, 128)
-        drawing = ImageDraw.Draw(sample)
-        drawing.text((64 + x_offset, 64 + y_offset), text, font=font, fill=random_color(), anchor='mm', language='ja')
-
-        self.character_index = (self.character_index + 1) % len(self.characters)
-        if self.transform is None:
-            return sample, label
-        else:
-            return self.transform(sample), label
 
     def __iter__(self) -> Iterator[T_co]:
         while True:
