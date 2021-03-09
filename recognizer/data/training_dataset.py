@@ -79,6 +79,7 @@ class RecognizerTrainingDataset(IterableDataset):
     # TODO: Add random lines to image, also in same color as text
     # TODO: Legible text is more common than completely illegible text
     # TODO: Italic
+    # TODO: Add random kanji outside of y
     def __init__(self, data_folder: str,
                  character_set: List[str],
                  img_background_weight=1,
