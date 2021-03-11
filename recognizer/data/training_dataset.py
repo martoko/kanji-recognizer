@@ -12,41 +12,9 @@ from fontTools.ttLib import TTFont
 from torch.utils.data import IterableDataset
 from torch.utils.data.dataset import T_co
 
-from recognizer.data import character_sets
+from recognizer.data import character_sets, fonts
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
-
-
-def font_paths(folder):
-    return glob.glob(os.path.join(folder, '**/*.ttf'), recursive=True) + \
-           glob.glob(os.path.join(folder, '**/*.otf'), recursive=True)
-
-
-def font_infos(characters, folder):
-    def has_glyph(font, glyph):
-        for table in font['cmap'].tables:
-            if ord(glyph) in table.cmap.keys():
-                return True
-        return False
-
-    infos = []
-    for path in font_paths(folder):
-        font = TTFont(path)
-        supported_glyphs = set()
-        missing_glyphs = set()
-        for character in characters:
-            if has_glyph(font, character):
-                supported_glyphs.add(character)
-            else:
-                missing_glyphs.add(character)
-        if len(missing_glyphs) > 0:
-            print(f"{len(missing_glyphs)}/{len(characters)} characters are missing from {os.path.basename(path)}")
-        infos += [{
-            "path": path,
-            "supported_glyphs": supported_glyphs,
-            "missing_glyphs": missing_glyphs
-        }]
-    return infos
 
 
 def background_images(folder):
@@ -74,12 +42,6 @@ def random_noise(width, height):
 
 
 class RecognizerTrainingDataset(IterableDataset):
-    # TODO: Rotate/morph/skew (common one is squishing the characters to fit more on one line)
-    # TODO: Other characters as part of background?
-    # TODO: Add random lines to image, also in same color as text
-    # TODO: Legible text is more common than completely illegible text
-    # TODO: Italic
-    # TODO: Add random kanji outside of y
     def __init__(self, data_folder: str,
                  character_set: List[str],
                  img_background_weight=1,
@@ -88,7 +50,7 @@ class RecognizerTrainingDataset(IterableDataset):
         super().__init__()
         fonts_folder = os.path.join(data_folder, "fonts")
         background_images_folder = os.path.join(data_folder, "backgrounds")
-        self.font_infos = font_infos(character_set, fonts_folder)
+        self.font_infos = fonts.font_infos_in_folder(fonts_folder, character_set)
         self.transform = transform
         self.character_index = 0
         self.characters = character_set
@@ -103,7 +65,7 @@ class RecognizerTrainingDataset(IterableDataset):
         self.stage = 0
 
     def fonts_supporting_glyph(self, glyph):
-        return [info for info in self.font_infos if glyph in info['supported_glyphs']]
+        return [font for font in self.font_infos if glyph in font.supported_glyphs]
 
     def random_background_image(self, width, height):
         background = random.choice(self.background_images)
@@ -142,7 +104,7 @@ class RecognizerTrainingDataset(IterableDataset):
         label = self.character_index
         font_info = self.fonts_supporting_glyph(character)[0]
         font_size = 20
-        font = ImageFont.truetype(font_info['path'], font_size)
+        font = font_info.get(font_size)
 
         _, _, width, height = font.getbbox(character, anchor='lt', language='ja')
         sample = Image.new('RGB', (128, 128), color=random_white_color())
@@ -161,7 +123,7 @@ class RecognizerTrainingDataset(IterableDataset):
         font_info = random.choice(self.fonts_supporting_glyph(character))
         font_size = self.random_font_size()
         font_size = max(8, font_size)
-        font = ImageFont.truetype(font_info['path'], font_size)
+        font = font_info.get(font_size)
 
         _, _, width, height = font.getbbox(character, anchor='lt', language='ja')
         sample = Image.new('RGB', (128, 128), color=random_white_color())
@@ -180,7 +142,7 @@ class RecognizerTrainingDataset(IterableDataset):
         font_info = random.choice(self.fonts_supporting_glyph(character))
         font_size = self.random_font_size()
         font_size = max(8, font_size)
-        font = ImageFont.truetype(font_info['path'], font_size)
+        font = font_info.get(font_size)
 
         _, _, width, height = font.getbbox(character, anchor='lt', language='ja')
         x_offset = int(((width / 2) - random.random() * width) * 0.8)
@@ -203,13 +165,13 @@ class RecognizerTrainingDataset(IterableDataset):
         font_info = random.choice(self.fonts_supporting_glyph(character))
         font_size = self.random_font_size()
         font_size = max(8, font_size)
-        font = ImageFont.truetype(font_info['path'], font_size)
+        font = font_info.get(font_size)
 
         before_count = random.randint(0, 10)
         after_count = random.randint(0, 10)
         total_count = before_count + after_count + 1
-        before = [random.choice(tuple(font_info['supported_glyphs'])) for _ in range(before_count)]
-        after = [random.choice(tuple(font_info['supported_glyphs'])) for _ in range(after_count)]
+        before = [random.choice(tuple(font_info.supported_glyphs)) for _ in range(before_count)]
+        after = [random.choice(tuple(font_info.supported_glyphs)) for _ in range(after_count)]
         text = ''.join(before) + character + ''.join(after)
 
         for character in list(text):
@@ -243,19 +205,19 @@ class RecognizerTrainingDataset(IterableDataset):
         font_size = int(random.choices([np.random.normal(15, 3), np.random.normal(20, 3), np.random.normal(35, 3)],
                                        weights=[10, 3, 1])[0])
         font_size = max(8, font_size)
-        font = ImageFont.truetype(font_info['path'], font_size)
+        font = font_info.get(font_size)
 
         before_count = random.randint(0, 10)
         after_count = random.randint(0, 10)
         total_count = before_count + after_count + 1
-        before = [random.choice(tuple(font_info['supported_glyphs'])) for _ in range(before_count)]
-        after = [random.choice(tuple(font_info['supported_glyphs'])) for _ in range(after_count)]
+        before = [random.choice(tuple(font_info.supported_glyphs)) for _ in range(before_count)]
+        after = [random.choice(tuple(font_info.supported_glyphs)) for _ in range(after_count)]
         text = ''.join(before) + character + ''.join(after)
 
         for character in list(text):
             left, top, right, bottom = font.getbbox(character, anchor='lt', language='ja')
             if right == 0 or bottom == 0:
-                print(f"{character} is missing from {os.path.basename(font_info['path'])}")
+                print(f"{character} is missing from {os.path.basename(font_info.path)}")
                 exit(-1)
 
         left, top, right, bottom = font.getbbox(text, anchor='lt', language='ja')
@@ -321,8 +283,8 @@ if __name__ == '__main__':
 
 
     dataset = RecognizerTrainingDataset(data_folder="data", character_set=character_sets.frequent_kanji_plus)
-    generate(dataset, 0, count=200)
-    generate(dataset, 1, count=200)
-    generate(dataset, 2, count=200)
-    generate(dataset, 3, count=200)
-    generate(dataset, 4, count=200)
+    # generate(dataset, 0, count=200)
+    # generate(dataset, 1, count=200)
+    # generate(dataset, 2, count=200)
+    # generate(dataset, 3, count=200)
+    generate(dataset, 4, count=50)
