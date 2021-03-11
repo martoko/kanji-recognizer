@@ -43,10 +43,7 @@ def random_noise(width, height):
 
 class RecognizerTrainingDataset(IterableDataset):
     def __init__(self, data_folder: str,
-                 character_set: List[str],
-                 img_background_weight=1,
-                 noise_background_weight=1,
-                 plain_background_weight=1, transform=None):
+                 character_set: List[str], transform=None):
         super().__init__()
         fonts_folder = os.path.join(data_folder, "fonts")
         background_images_folder = os.path.join(data_folder, "backgrounds")
@@ -54,9 +51,6 @@ class RecognizerTrainingDataset(IterableDataset):
         self.transform = transform
         self.character_index = 0
         self.characters = character_set
-        self.plain_background_weight = plain_background_weight
-        self.noise_background_weight = noise_background_weight
-        self.img_background_weight = img_background_weight
         self.background_images = [
             Image.open(os.path.join(background_images_folder, name))
             for name in os.listdir(background_images_folder)
@@ -80,12 +74,14 @@ class RecognizerTrainingDataset(IterableDataset):
         )
 
     def generate_background(self, width, height):
-        choice = random.choices(["noise", "img", "plain"],
-                                weights=[self.noise_background_weight, self.img_background_weight,
-                                         self.plain_background_weight])[0]
+        choice = random.choices(["noise", "img", "plain"])[0]
 
         if choice == "noise":
-            return random_noise(width, height)
+            if random.random() > 0.5:
+                image = self.random_background_image(width, height)
+            else:
+                image = Image.new('RGB', (width, height), color=random_white_color())
+            return Image.blend(image, random_noise(width, height), min(abs(np.random.normal(0, 1)), 1))
         elif choice == "img":
             return self.random_background_image(width, height)
         else:
