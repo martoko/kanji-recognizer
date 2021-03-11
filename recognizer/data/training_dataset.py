@@ -81,7 +81,7 @@ class RecognizerTrainingDataset(IterableDataset):
                 image = self.random_background_image(width, height)
             else:
                 image = Image.new('RGB', (width, height), color=random_white_color())
-            return Image.blend(image, random_noise(width, height), min(abs(np.random.normal(0, 1)), 1))
+            return Image.blend(image, random_noise(width, height), min(abs(np.random.normal(0, 0.3)), 1))
         elif choice == "img":
             return self.random_background_image(width, height)
         else:
@@ -349,5 +349,5 @@ if __name__ == '__main__':
     # generate(dataset, 1, count=200)
     # generate(dataset, 2, count=200)
     # generate(dataset, 3, count=200)
-    generate(dataset, 4, count=50)
-    generate(dataset, 5, count=50)
+    generate(dataset, 4, count=100)
+    generate(dataset, 5, count=100)
