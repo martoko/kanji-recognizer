@@ -87,7 +87,8 @@ class RecognizerTrainingDataset(IterableDataset):
         else:
             return Image.new('RGB', (width, height), color=random_white_color())
 
-    def random_font_size(self):
+    @staticmethod
+    def random_font_size():
         return int(random.choices([
             np.random.normal(15, 3),
             np.random.normal(20, 3),
@@ -198,8 +199,7 @@ class RecognizerTrainingDataset(IterableDataset):
         character = self.characters[self.character_index]
         label = self.character_index
         font_info = random.choice(self.fonts_supporting_glyph(character))
-        font_size = int(random.choices([np.random.normal(15, 3), np.random.normal(20, 3), np.random.normal(35, 3)],
-                                       weights=[10, 3, 1])[0])
+        font_size = self.random_font_size()
         font_size = max(8, font_size)
         font = font_info.get(font_size)
 
@@ -234,6 +234,70 @@ class RecognizerTrainingDataset(IterableDataset):
         else:
             return self.transform(sample), label
 
+    def generate_stage_5(self):
+        character = self.characters[self.character_index]
+        label = self.character_index
+        font_info = random.choice(self.fonts_supporting_glyph(character))
+        font_size = self.random_font_size()
+        font_size = max(8, font_size)
+        font = font_info.get(font_size)
+
+        before_count = random.randint(0, 10)
+        after_count = random.randint(0, 10)
+        total_count = before_count + after_count + 1
+        before = [random.choice(tuple(font_info.supported_glyphs)) for _ in range(before_count)]
+        after = [random.choice(tuple(font_info.supported_glyphs)) for _ in range(after_count)]
+        text = ''.join(before) + character + ''.join(after)
+
+        floating_count = int(abs(np.random.normal(0, 10)))
+        floating_characters = [random.choice(tuple(font_info.supported_glyphs)) for _ in range(floating_count)]
+
+        for character in list(text) + floating_characters:
+            left, top, right, bottom = font.getbbox(character, anchor='lt', language='ja')
+            if right == 0 or bottom == 0:
+                print(f"{character} is missing from {os.path.basename(font_info.path)}")
+                exit(-1)
+
+        left, top, right, bottom = font.getbbox(text, anchor='lt', language='ja')
+
+        character_width = right / total_count
+        character_height = bottom
+        x = 64 - character_width / 2 - character_width * before_count
+        x_offset = int(((character_width / 2) - random.random() * character_width) * 0.8)
+        y_offset = int(((character_height / 2) - random.random() * character_height) * 0.8)
+        x = x + x_offset
+        y = 64 + y_offset
+
+        sample = self.generate_background(128, 128)
+        drawing = ImageDraw.Draw(sample)
+        drawing.text((x, y), text, font=font, fill=random_color(), anchor='lm', language='ja')
+
+        for character in floating_characters:
+            font_info = random.choice(self.fonts_supporting_glyph(character))
+            font_size = self.random_font_size()
+            font_size = max(8, font_size)
+            font = font_info.get(font_size)
+            f_left, f_top, f_right, f_bottom = font.getbbox(character, anchor='lt', language='ja')
+
+            floating_x = []
+            floating_y = []
+            if y - bottom / 2 - f_bottom > -f_bottom:
+                floating_y += [random.randint(-f_bottom, y - bottom // 2 - f_bottom)]
+            if 128 > y + bottom / 2:
+                floating_y += [random.randint(y + bottom // 2, 128)]
+            if not floating_y:
+                continue
+
+            floating_x += [random.randint(-f_right, 128)]
+
+            drawing.text((random.choice(floating_x), random.choice(floating_y)), character, font=font, fill=random_color(), anchor='lt', language='ja')
+
+        self.character_index = (self.character_index + 1) % len(self.characters)
+        if self.transform is None:
+            return sample, label
+        else:
+            return self.transform(sample), label
+
     def generate(self):
         low = math.floor(self.stage)
         high = low + 1
@@ -242,7 +306,7 @@ class RecognizerTrainingDataset(IterableDataset):
         else:
             stage = high
 
-        stage = min(stage, 4)
+        stage = min(stage, 5)
 
         if stage == 0:
             return self.generate_stage_0()
@@ -254,6 +318,8 @@ class RecognizerTrainingDataset(IterableDataset):
             return self.generate_stage_3()
         if stage == 4:
             return self.generate_stage_4()
+        if stage == 5:
+            return self.generate_stage_5()
 
     def __iter__(self) -> Iterator[T_co]:
         while True:
@@ -284,3 +350,4 @@ if __name__ == '__main__':
     # generate(dataset, 2, count=200)
     # generate(dataset, 3, count=200)
     generate(dataset, 4, count=50)
+    generate(dataset, 5, count=50)
