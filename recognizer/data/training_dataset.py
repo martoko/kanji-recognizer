@@ -29,14 +29,6 @@ def random_color():
     return randint(0, 255), randint(0, 255), randint(0, 255)
 
 
-def random_white_color():
-    return randint(230, 255), randint(230, 255), randint(230, 255)
-
-
-def random_black_color():
-    return randint(0, 50), randint(0, 50), randint(0, 50)
-
-
 def random_noise(width, height):
     return Image.fromarray(np.random.randint(0, 255, (width, height, 3), dtype=np.dtype('uint8')))
 
@@ -80,12 +72,12 @@ class RecognizerTrainingDataset(IterableDataset):
             if random.random() > 0.5:
                 image = self.random_background_image(width, height)
             else:
-                image = Image.new('RGB', (width, height), color=random_white_color())
+                image = Image.new('RGB', (width, height), color=random_color())
             return Image.blend(image, random_noise(width, height), min(abs(np.random.normal(0, 0.3)), 1))
         elif choice == "img":
             return self.random_background_image(width, height)
         else:
-            return Image.new('RGB', (width, height), color=random_white_color())
+            return Image.new('RGB', (width, height), color=random_color())
 
     @staticmethod
     def random_font_size():
@@ -104,7 +96,7 @@ class RecognizerTrainingDataset(IterableDataset):
         font = font_info.get(font_size)
 
         _, _, width, height = font.getbbox(character, anchor='lt', language='ja')
-        sample = Image.new('RGB', (128, 128), color=random_white_color())
+        sample = Image.new('RGB', (128, 128), color=random_color())
         drawing = ImageDraw.Draw(sample)
         drawing.text((64, 64), character, font=font, fill=random_color(), anchor='mm', language='ja')
 
@@ -123,7 +115,7 @@ class RecognizerTrainingDataset(IterableDataset):
         font = font_info.get(font_size)
 
         _, _, width, height = font.getbbox(character, anchor='lt', language='ja')
-        sample = Image.new('RGB', (128, 128), color=random_white_color())
+        sample = Image.new('RGB', (128, 128), color=random_color())
         drawing = ImageDraw.Draw(sample)
         drawing.text((64, 64), character, font=font, fill=random_color(), anchor='mm', language='ja')
 
@@ -145,7 +137,7 @@ class RecognizerTrainingDataset(IterableDataset):
         x_offset = int(((width / 2) - random.random() * width) * 0.8)
         y_offset = int(((height / 2) - random.random() * height) * 0.8)
 
-        sample = Image.new('RGB', (128, 128), color=random_white_color())
+        sample = Image.new('RGB', (128, 128), color=random_color())
         drawing = ImageDraw.Draw(sample)
         drawing.text((64 + x_offset, 64 + y_offset), character, font=font, fill=random_color(), anchor='mm',
                      language='ja')
@@ -185,7 +177,7 @@ class RecognizerTrainingDataset(IterableDataset):
         x_offset = int(((character_width / 2) - random.random() * character_width) * 0.8)
         y_offset = int(((character_height / 2) - random.random() * character_height) * 0.8)
 
-        sample = Image.new('RGB', (128, 128), color=random_white_color())
+        sample = Image.new('RGB', (128, 128), color=random_color())
         drawing = ImageDraw.Draw(sample)
         drawing.text((x + x_offset, 64 + y_offset), text, font=font, fill=random_color(), anchor='lm', language='ja')
 
