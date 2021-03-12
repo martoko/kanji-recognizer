@@ -337,9 +337,9 @@ if __name__ == '__main__':
 
 
     dataset = RecognizerTrainingDataset(data_folder="data", character_set=character_sets.frequent_kanji_plus)
-    # generate(dataset, 0, count=200)
-    # generate(dataset, 1, count=200)
-    # generate(dataset, 2, count=200)
-    # generate(dataset, 3, count=200)
-    generate(dataset, 4, count=100)
-    generate(dataset, 5, count=100)
+    generate(dataset, 0, count=200)
+    generate(dataset, 1, count=200)
+    generate(dataset, 2, count=200)
+    generate(dataset, 3, count=200)
+    generate(dataset, 4, count=200)
+    generate(dataset, 5, count=200)
