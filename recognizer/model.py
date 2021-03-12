@@ -25,9 +25,6 @@ class KanjiRecognizer(pl.LightningModule):
         self.val_accuracy = pl.metrics.Accuracy()
         self.test_accuracy = pl.metrics.Accuracy()
 
-        # Set the starting stage
-        self.train_dataloader().dataset.stage = kwargs['stage']
-
     def forward(self, x):
         return self.model(x)
 
