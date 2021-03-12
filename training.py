@@ -21,6 +21,8 @@ if __name__ == "__main__":
                         help="name of characters to use (default: frequent_kanji_plus)")
     parser.add_argument("-w", "--num-workers", type=int, default=0,
                         help="number of workers to apply to data loading (default: 0)")
+    parser.add_argument("-s", "--stage", type=float, default=0.0,
+                        help="starting stage of the curriculum based training data (default: 0.0)")
     args = parser.parse_args()
 
     datamodule = RecognizerDataModule(**vars(args))
