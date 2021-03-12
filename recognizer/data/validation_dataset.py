@@ -11,7 +11,7 @@ from . import character_sets
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
-
+# TODO: Vary size
 class RecognizerValidationSingleImageDataset(Dataset):
     def __init__(self, path, characters, transform=None):
         super().__init__()

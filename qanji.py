@@ -30,7 +30,7 @@ class Qanji(QWidget):
         # self.boxer.load_state_dict(torch.load('./box_saved_model.pt'))
 
         self.characters = character_sets.frequent_kanji_plus
-        self.recog = KanjiRecognizer.load_from_checkpoint('/home/martoko/Code/kanji-recognizer/rare-durian-72.ckpt')
+        self.recog = KanjiRecognizer.load_from_checkpoint('epoch=260-step=16360.ckpt')
         self.recog.eval()
 
         self.setWindowTitle("Qanji")
@@ -38,23 +38,14 @@ class Qanji(QWidget):
         self.pixmap: Optional[QPixmap] = None
 
         self.button = QPushButton("Click me!")
-        self.screenshot_label_org = QLabel()
-        self.screenshot_label_org.setAlignment(Qt.AlignCenter)
-        self.screenshot_label2 = QLabel()
-        self.screenshot_label2.setAlignment(Qt.AlignCenter)
-        self.screenshot_label3 = QLabel()
-        self.screenshot_label3.setAlignment(Qt.AlignCenter)
-        self.screenshot_label_final = QLabel()
-        self.screenshot_label_final.setAlignment(Qt.AlignCenter)
+        self.screenshot_label = QLabel()
+        self.screenshot_label.setAlignment(Qt.AlignCenter)
         self.text = QLineEdit("While focus is on this window, press shift to perform OCR")
         self.text.setFont(QFont("sans serif", 32))
         self.text.setAlignment(Qt.AlignCenter)
 
         self.layout = QVBoxLayout()
-        self.layout.addWidget(self.screenshot_label_org)
-        self.layout.addWidget(self.screenshot_label2)
-        self.layout.addWidget(self.screenshot_label3)
-        self.layout.addWidget(self.screenshot_label_final)
+        self.layout.addWidget(self.screenshot_label)
         self.layout.addWidget(self.text)
         self.layout.addWidget(self.button)
         self.setLayout(self.layout)
@@ -72,7 +63,6 @@ class Qanji(QWidget):
     @Slot()
     def shoot_screen(self) -> None:
         self.pixmap = self.clip_around(QCursor.pos(), 128)
-        self.screenshot_label_org.setPixmap(self.pixmap)
         if self.pixmap is None:
             return
         pilimg = self.pixmap_to_pil(self.pixmap)
@@ -110,7 +100,7 @@ class Qanji(QWidget):
         #     Qt.KeepAspectRatio,
         #     Qt.SmoothTransformation
         # )
-        self.screenshot_label_final.setPixmap(scaled_pixmap)
+        self.screenshot_label.setPixmap(scaled_pixmap)
 
     @staticmethod
     def clip_around(point: QPoint, size: int) -> Optional[QPixmap]:
