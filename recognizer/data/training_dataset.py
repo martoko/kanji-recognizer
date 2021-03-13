@@ -33,6 +33,49 @@ def random_noise(width, height):
     return Image.fromarray(np.random.randint(0, 255, (width, height, 3), dtype=np.dtype('uint8')))
 
 
+def outline(drawing, xy, *args, outline_fill=None, outline_thickness=None, fill, **kwargs):
+    if outline_fill is None:
+        outline_fill = random_color()
+    if outline_thickness is None:
+        outline_thickness = 1 + round(abs(np.random.normal(1)))
+
+    x, y = xy
+    for dx in range(-outline_thickness, 1 + outline_thickness):
+        for dy in range(-outline_thickness, 1 + outline_thickness):
+            drawing.text((x + dx, y + dy), *args, fill=outline_fill, **kwargs)
+
+    drawing.text(xy, *args, fill=fill, **kwargs)
+
+
+def eat_sides(image, left, right, top, bottom):
+    left = round(left)
+    right = round(right)
+    top = round(top)
+    bottom = round(bottom)
+    color = random_color()
+
+    drawing = ImageDraw.Draw(image)
+    drawing.rectangle((
+        (0, 0),
+        (random.randint(0, left), image.height)
+    ), fill=color)
+
+    drawing.rectangle((
+        (image.width, 0),
+        (random.randint(right, image.width), image.height)
+    ), fill=color)
+
+    drawing.rectangle((
+        (0, 0),
+        (image.width, random.randint(0, top))
+    ), fill=color)
+
+    drawing.rectangle((
+        (0, image.height),
+        (image.width, random.randint(bottom, image.height))
+    ), fill=color)
+
+
 class RecognizerTrainingDataset(IterableDataset):
     def __init__(self, data_folder: str,
                  character_set: List[str], transform=None):
@@ -218,7 +261,22 @@ class RecognizerTrainingDataset(IterableDataset):
 
         sample = self.generate_background(128, 128)
         drawing = ImageDraw.Draw(sample)
-        drawing.text((x + x_offset, 64 + y_offset), text, font=font, fill=random_color(), anchor='lm', language='ja')
+
+        if random.random() > 0.9:
+            outline(drawing, (x + x_offset, 64 + y_offset),
+                    text, font=font, fill=random_color(), anchor='lm', language='ja')
+        else:
+            drawing.text((x + x_offset, 64 + y_offset),
+                         text, font=font, fill=random_color(), anchor='lm', language='ja')
+
+        if random.random() > 0.9:
+            eat_sides(
+                sample,
+                64 + x_offset - character_width / 2,
+                64 + x_offset + character_width / 2,
+                64 + y_offset - character_height / 2,
+                64 + y_offset + character_height / 2
+            )
 
         self.character_index = (self.character_index + 1) % len(self.characters)
         if self.transform is None:
@@ -241,6 +299,8 @@ class RecognizerTrainingDataset(IterableDataset):
         after = [random.choice(tuple(font_info.supported_glyphs)) for _ in range(after_count)]
         text = ''.join(before) + character + ''.join(after)
 
+        has_outline = random.random() > 0.9
+
         floating_count = int(abs(np.random.normal(0, 10)))
         floating_characters = [random.choice(tuple(font_info.supported_glyphs)) for _ in range(floating_count)]
 
@@ -262,7 +322,11 @@ class RecognizerTrainingDataset(IterableDataset):
 
         sample = self.generate_background(128, 128)
         drawing = ImageDraw.Draw(sample)
-        drawing.text((x, y), text, font=font, fill=random_color(), anchor='lm', language='ja')
+
+        if has_outline:
+            outline(drawing, (x, y), text, font=font, fill=random_color(), anchor='lm', language='ja')
+        else:
+            drawing.text((x, y), text, font=font, fill=random_color(), anchor='lm', language='ja')
 
         for character in floating_characters:
             font_info = random.choice(self.fonts_supporting_glyph(character))
@@ -282,7 +346,21 @@ class RecognizerTrainingDataset(IterableDataset):
 
             floating_x += [random.randint(-f_right, 128)]
 
-            drawing.text((random.choice(floating_x), random.choice(floating_y)), character, font=font, fill=random_color(), anchor='lt', language='ja')
+            if random.random() > 0.9:
+                outline(drawing, (random.choice(floating_x), random.choice(floating_y)), character, font=font,
+                        fill=random_color(), anchor='lt', language='ja')
+            else:
+                drawing.text((random.choice(floating_x), random.choice(floating_y)), character, font=font,
+                             fill=random_color(), anchor='lt', language='ja')
+
+        if random.random() > 0.9:
+            eat_sides(
+                sample,
+                64 + x_offset - character_width / 2,
+                64 + x_offset + character_width / 2,
+                64 + y_offset - character_height / 2,
+                64 + y_offset + character_height / 2
+            )
 
         self.character_index = (self.character_index + 1) % len(self.characters)
         if self.transform is None:
@@ -337,9 +415,9 @@ if __name__ == '__main__':
 
 
     dataset = RecognizerTrainingDataset(data_folder="data", character_set=character_sets.frequent_kanji_plus)
-    generate(dataset, 0, count=200)
-    generate(dataset, 1, count=200)
-    generate(dataset, 2, count=200)
-    generate(dataset, 3, count=200)
-    generate(dataset, 4, count=200)
+    generate(dataset, 0, count=50)
+    generate(dataset, 1, count=50)
+    generate(dataset, 2, count=50)
+    generate(dataset, 3, count=50)
+    generate(dataset, 4, count=50)
     generate(dataset, 5, count=200)
