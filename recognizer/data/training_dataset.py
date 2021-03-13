@@ -33,7 +33,7 @@ def random_noise(width, height):
     return Image.fromarray(np.random.randint(0, 255, (width, height, 3), dtype=np.dtype('uint8')))
 
 
-def outline(drawing, xy, *args, outline_fill=None, outline_thickness=None, fill, **kwargs):
+def draw_outlined_text(drawing, xy, *args, outline_fill=None, outline_thickness=None, fill, **kwargs):
     if outline_fill is None:
         outline_fill = random_color()
     if outline_thickness is None:
@@ -45,6 +45,19 @@ def outline(drawing, xy, *args, outline_fill=None, outline_thickness=None, fill,
             drawing.text((x + dx, y + dy), *args, fill=outline_fill, **kwargs)
 
     drawing.text(xy, *args, fill=fill, **kwargs)
+
+
+def draw_underlined_text(drawing, xy, text, *args, font, anchor, language, **kwargs):
+    left, top, right, bottom = font.getbbox(text, anchor=anchor, language=language)
+
+    width = round(abs(np.random.normal(1, 0.1)))
+    jitter = np.random.normal(1, 0.1) * (font.size / 20)
+    drawing.text(xy, text, *args, font=font, anchor=anchor, language=language, **kwargs)
+    x, y = xy
+    drawing.line((
+        (x + left, y + bottom + jitter),
+        (x + right, y + bottom + jitter)
+    ), *args, width=width, **kwargs)
 
 
 def eat_sides(image, left, right, top, bottom):
@@ -263,8 +276,8 @@ class RecognizerTrainingDataset(IterableDataset):
         drawing = ImageDraw.Draw(sample)
 
         if random.random() > 0.9:
-            outline(drawing, (x + x_offset, 64 + y_offset),
-                    text, font=font, fill=random_color(), anchor='lm', language='ja')
+            draw_outlined_text(drawing, (x + x_offset, 64 + y_offset),
+                               text, font=font, fill=random_color(), anchor='lm', language='ja')
         else:
             drawing.text((x + x_offset, 64 + y_offset),
                          text, font=font, fill=random_color(), anchor='lm', language='ja')
@@ -299,8 +312,6 @@ class RecognizerTrainingDataset(IterableDataset):
         after = [random.choice(tuple(font_info.supported_glyphs)) for _ in range(after_count)]
         text = ''.join(before) + character + ''.join(after)
 
-        has_outline = random.random() > 0.9
-
         floating_count = int(abs(np.random.normal(0, 10)))
         floating_characters = [random.choice(tuple(font_info.supported_glyphs)) for _ in range(floating_count)]
 
@@ -323,8 +334,11 @@ class RecognizerTrainingDataset(IterableDataset):
         sample = self.generate_background(128, 128)
         drawing = ImageDraw.Draw(sample)
 
-        if has_outline:
-            outline(drawing, (x, y), text, font=font, fill=random_color(), anchor='lm', language='ja')
+        effect = random.choices(['outline', 'underline', 'none'], weights=[1, 1, 10])[0]
+        if effect == 'outline':
+            draw_outlined_text(drawing, (x, y), text, font=font, fill=random_color(), anchor='lm', language='ja')
+        elif effect == 'underline':
+            draw_underlined_text(drawing, (x, y), text, font=font, fill=random_color(), anchor='lm', language='ja')
         else:
             drawing.text((x, y), text, font=font, fill=random_color(), anchor='lm', language='ja')
 
@@ -347,8 +361,9 @@ class RecognizerTrainingDataset(IterableDataset):
             floating_x += [random.randint(-f_right, 128)]
 
             if random.random() > 0.9:
-                outline(drawing, (random.choice(floating_x), random.choice(floating_y)), character, font=font,
-                        fill=random_color(), anchor='lt', language='ja')
+                draw_outlined_text(drawing, (random.choice(floating_x), random.choice(floating_y)), character,
+                                   font=font,
+                                   fill=random_color(), anchor='lt', language='ja')
             else:
                 drawing.text((random.choice(floating_x), random.choice(floating_y)), character, font=font,
                              fill=random_color(), anchor='lt', language='ja')
