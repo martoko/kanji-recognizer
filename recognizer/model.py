@@ -41,7 +41,7 @@ class KanjiRecognizer(pl.LightningModule):
         logits, loss = self.loss(images, labels)
 
         self.log('train/loss', loss)
-        self.log('train/acc', self.train_accuracy(F.softmax(logits), labels))
+        self.log('train/acc', self.train_accuracy(F.softmax(logits, dim=1), labels), prog_bar=True)
 
         return loss
 
@@ -49,17 +49,17 @@ class KanjiRecognizer(pl.LightningModule):
         images, labels = batch
         logits, loss = self.loss(images, labels)
 
-        self.log('val/loss', loss)
+        self.log('val/loss', loss, prog_bar=True)
         accuracy = self.val_accuracy(F.softmax(logits), labels)
         self.log('val/acc', accuracy)
 
         return loss
 
-    def validation_epoch_end(self, *args):
+    def training_epoch_end(self, *args):
         dataset = self.train_dataloader().dataset
         if self.train_accuracy.compute() > 0.95:
             dataset.stage += 0.1
-        self.log('train/stage', dataset.stage)
+        self.log('train/stage', dataset.stage, prog_bar=True)
 
     def test_step(self, batch, batch_index):
         images, labels = batch
