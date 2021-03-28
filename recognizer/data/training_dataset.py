@@ -29,6 +29,10 @@ def random_color():
     return randint(0, 255), randint(0, 255), randint(0, 255)
 
 
+WHITE_COLOR = (255, 255, 255)
+BLACK_COLOR = (0, 0, 0)
+
+
 def random_noise(width, height):
     return Image.fromarray(np.random.randint(0, 255, (width, height, 3), dtype=np.dtype('uint8')))
 
@@ -144,11 +148,51 @@ class RecognizerTrainingDataset(IterableDataset):
             np.random.normal(50, 3)
         ], weights=[10, 3, 1, 1])[0])
 
+    # Generates very simple fixed size characters black on white
     def generate_stage_0(self):
         character = self.characters[self.character_index]
         label = self.character_index
         font_info = self.fonts_supporting_glyph(character)[0]
-        font_size = 20
+        font_size = 32
+        font = font_info.get(font_size)
+
+        _, _, width, height = font.getbbox(character, anchor='lt', language='ja')
+        sample = Image.new('RGB', (128, 128), color=WHITE_COLOR)
+        drawing = ImageDraw.Draw(sample)
+        drawing.text((64, 64), character, font=font, fill=BLACK_COLOR, anchor='mm', language='ja')
+
+        self.character_index = (self.character_index + 1) % len(self.characters)
+        if self.transform is None:
+            return sample, label
+        else:
+            return self.transform(sample), label
+
+    # 50/50 chance between black on white and white on black
+    def generate_stage_1(self):
+        character = self.characters[self.character_index]
+        label = self.character_index
+        font_info = self.fonts_supporting_glyph(character)[0]
+        font_size = 32
+        font = font_info.get(font_size)
+        inverted = random.random() > 0.5
+
+        _, _, width, height = font.getbbox(character, anchor='lt', language='ja')
+        sample = Image.new('RGB', (128, 128), color=BLACK_COLOR if inverted else WHITE_COLOR)
+        drawing = ImageDraw.Draw(sample)
+        drawing.text((64, 64), character, font=font, fill=WHITE_COLOR if inverted else BLACK_COLOR, anchor='mm', language='ja')
+
+        self.character_index = (self.character_index + 1) % len(self.characters)
+        if self.transform is None:
+            return sample, label
+        else:
+            return self.transform(sample), label
+
+    # Colors are now random
+    def generate_stage_2(self):
+        character = self.characters[self.character_index]
+        label = self.character_index
+        font_info = self.fonts_supporting_glyph(character)[0]
+        font_size = 32
         font = font_info.get(font_size)
 
         _, _, width, height = font.getbbox(character, anchor='lt', language='ja')
@@ -162,7 +206,27 @@ class RecognizerTrainingDataset(IterableDataset):
         else:
             return self.transform(sample), label
 
-    def generate_stage_1(self):
+    # Font sizes can now vary between two sizes
+    def generate_stage_3(self):
+        character = self.characters[self.character_index]
+        label = self.character_index
+        font_info = self.fonts_supporting_glyph(character)[0]
+        font_size = random.choice([20, 32])
+        font = font_info.get(font_size)
+
+        _, _, width, height = font.getbbox(character, anchor='lt', language='ja')
+        sample = Image.new('RGB', (128, 128), color=random_color())
+        drawing = ImageDraw.Draw(sample)
+        drawing.text((64, 64), character, font=font, fill=random_color(), anchor='mm', language='ja')
+
+        self.character_index = (self.character_index + 1) % len(self.characters)
+        if self.transform is None:
+            return sample, label
+        else:
+            return self.transform(sample), label
+
+    # Completely random font size, and random font
+    def generate_stage_4(self):
         character = self.characters[self.character_index]
         label = self.character_index
         font_info = random.choice(self.fonts_supporting_glyph(character))
@@ -181,7 +245,8 @@ class RecognizerTrainingDataset(IterableDataset):
         else:
             return self.transform(sample), label
 
-    def generate_stage_2(self):
+    # Random character location (while making sure at least part of the character is still in the center)
+    def generate_stage_5(self):
         character = self.characters[self.character_index]
         label = self.character_index
         font_info = random.choice(self.fonts_supporting_glyph(character))
@@ -204,7 +269,8 @@ class RecognizerTrainingDataset(IterableDataset):
         else:
             return self.transform(sample), label
 
-    def generate_stage_3(self):
+    # Characters before and after, simulating a sentence
+    def generate_stage_6(self):
         character = self.characters[self.character_index]
         label = self.character_index
         font_info = random.choice(self.fonts_supporting_glyph(character))
@@ -243,7 +309,8 @@ class RecognizerTrainingDataset(IterableDataset):
         else:
             return self.transform(sample), label
 
-    def generate_stage_4(self):
+    # Borders, cropping the sides of the images, real images used as background with gaussian noise
+    def generate_stage_7(self):
         character = self.characters[self.character_index]
         label = self.character_index
         font_info = random.choice(self.fonts_supporting_glyph(character))
@@ -297,7 +364,8 @@ class RecognizerTrainingDataset(IterableDataset):
         else:
             return self.transform(sample), label
 
-    def generate_stage_5(self):
+    # Characters placed randomly on the screen, underlined text
+    def generate_stage_8(self):
         character = self.characters[self.character_index]
         label = self.character_index
         font_info = random.choice(self.fonts_supporting_glyph(character))
@@ -391,7 +459,7 @@ class RecognizerTrainingDataset(IterableDataset):
         else:
             stage = high
 
-        stage = min(stage, 5)
+        stage = min(stage, 8)
 
         if stage == 0:
             return self.generate_stage_0()
@@ -405,6 +473,12 @@ class RecognizerTrainingDataset(IterableDataset):
             return self.generate_stage_4()
         if stage == 5:
             return self.generate_stage_5()
+        if stage == 6:
+            return self.generate_stage_6()
+        if stage == 7:
+            return self.generate_stage_7()
+        if stage == 8:
+            return self.generate_stage_8()
 
     def __iter__(self) -> Iterator[T_co]:
         while True:
@@ -435,4 +509,7 @@ if __name__ == '__main__':
     generate(dataset, 2, count=50)
     generate(dataset, 3, count=50)
     generate(dataset, 4, count=50)
-    generate(dataset, 5, count=200)
+    generate(dataset, 5, count=50)
+    generate(dataset, 6, count=50)
+    generate(dataset, 7, count=50)
+    generate(dataset, 8, count=50)
