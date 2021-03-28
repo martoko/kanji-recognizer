@@ -101,7 +101,6 @@ class RecognizerTrainingDataset(IterableDataset):
         background_images_folder = os.path.join(data_folder, "backgrounds")
         self.font_infos = fonts.font_infos_in_folder(fonts_folder, character_set)
         self.transform = transform
-        self.character_index = 0
         self.characters = character_set
         self.background_images = [
             Image.open(os.path.join(background_images_folder, name))
@@ -150,8 +149,8 @@ class RecognizerTrainingDataset(IterableDataset):
 
     # Generates very simple fixed size characters black on white
     def generate_stage_0(self):
-        character = self.characters[self.character_index]
-        label = self.character_index
+        label = random.randrange(0, len(self.characters))
+        character = self.characters[label]
         font_info = self.fonts_supporting_glyph(character)[0]
         font_size = 32
         font = font_info.get(font_size)
@@ -161,7 +160,6 @@ class RecognizerTrainingDataset(IterableDataset):
         drawing = ImageDraw.Draw(sample)
         drawing.text((64, 64), character, font=font, fill=BLACK_COLOR, anchor='mm', language='ja')
 
-        self.character_index = (self.character_index + 1) % len(self.characters)
         if self.transform is None:
             return sample, label
         else:
@@ -169,8 +167,8 @@ class RecognizerTrainingDataset(IterableDataset):
 
     # 50/50 chance between black on white and white on black
     def generate_stage_1(self):
-        character = self.characters[self.character_index]
-        label = self.character_index
+        label = random.randrange(0, len(self.characters))
+        character = self.characters[label]
         font_info = self.fonts_supporting_glyph(character)[0]
         font_size = 32
         font = font_info.get(font_size)
@@ -181,7 +179,6 @@ class RecognizerTrainingDataset(IterableDataset):
         drawing = ImageDraw.Draw(sample)
         drawing.text((64, 64), character, font=font, fill=WHITE_COLOR if inverted else BLACK_COLOR, anchor='mm', language='ja')
 
-        self.character_index = (self.character_index + 1) % len(self.characters)
         if self.transform is None:
             return sample, label
         else:
@@ -189,8 +186,8 @@ class RecognizerTrainingDataset(IterableDataset):
 
     # Colors are now random
     def generate_stage_2(self):
-        character = self.characters[self.character_index]
-        label = self.character_index
+        label = random.randrange(0, len(self.characters))
+        character = self.characters[label]
         font_info = self.fonts_supporting_glyph(character)[0]
         font_size = 32
         font = font_info.get(font_size)
@@ -200,7 +197,6 @@ class RecognizerTrainingDataset(IterableDataset):
         drawing = ImageDraw.Draw(sample)
         drawing.text((64, 64), character, font=font, fill=random_color(), anchor='mm', language='ja')
 
-        self.character_index = (self.character_index + 1) % len(self.characters)
         if self.transform is None:
             return sample, label
         else:
@@ -208,8 +204,8 @@ class RecognizerTrainingDataset(IterableDataset):
 
     # Font sizes can now vary between two sizes
     def generate_stage_3(self):
-        character = self.characters[self.character_index]
-        label = self.character_index
+        label = random.randrange(0, len(self.characters))
+        character = self.characters[label]
         font_info = self.fonts_supporting_glyph(character)[0]
         font_size = random.choice([20, 32])
         font = font_info.get(font_size)
@@ -219,7 +215,6 @@ class RecognizerTrainingDataset(IterableDataset):
         drawing = ImageDraw.Draw(sample)
         drawing.text((64, 64), character, font=font, fill=random_color(), anchor='mm', language='ja')
 
-        self.character_index = (self.character_index + 1) % len(self.characters)
         if self.transform is None:
             return sample, label
         else:
@@ -227,8 +222,8 @@ class RecognizerTrainingDataset(IterableDataset):
 
     # Completely random font size, and random font
     def generate_stage_4(self):
-        character = self.characters[self.character_index]
-        label = self.character_index
+        label = random.randrange(0, len(self.characters))
+        character = self.characters[label]
         font_info = random.choice(self.fonts_supporting_glyph(character))
         font_size = self.random_font_size()
         font_size = max(8, font_size)
@@ -239,7 +234,6 @@ class RecognizerTrainingDataset(IterableDataset):
         drawing = ImageDraw.Draw(sample)
         drawing.text((64, 64), character, font=font, fill=random_color(), anchor='mm', language='ja')
 
-        self.character_index = (self.character_index + 1) % len(self.characters)
         if self.transform is None:
             return sample, label
         else:
@@ -247,8 +241,8 @@ class RecognizerTrainingDataset(IterableDataset):
 
     # Random character location (while making sure at least part of the character is still in the center)
     def generate_stage_5(self):
-        character = self.characters[self.character_index]
-        label = self.character_index
+        label = random.randrange(0, len(self.characters))
+        character = self.characters[label]
         font_info = random.choice(self.fonts_supporting_glyph(character))
         font_size = self.random_font_size()
         font_size = max(8, font_size)
@@ -263,7 +257,6 @@ class RecognizerTrainingDataset(IterableDataset):
         drawing.text((64 + x_offset, 64 + y_offset), character, font=font, fill=random_color(), anchor='mm',
                      language='ja')
 
-        self.character_index = (self.character_index + 1) % len(self.characters)
         if self.transform is None:
             return sample, label
         else:
@@ -271,8 +264,8 @@ class RecognizerTrainingDataset(IterableDataset):
 
     # Characters before and after, simulating a sentence
     def generate_stage_6(self):
-        character = self.characters[self.character_index]
-        label = self.character_index
+        label = random.randrange(0, len(self.characters))
+        character = self.characters[label]
         font_info = random.choice(self.fonts_supporting_glyph(character))
         font_size = self.random_font_size()
         font_size = max(8, font_size)
@@ -303,7 +296,6 @@ class RecognizerTrainingDataset(IterableDataset):
         drawing = ImageDraw.Draw(sample)
         drawing.text((x + x_offset, 64 + y_offset), text, font=font, fill=random_color(), anchor='lm', language='ja')
 
-        self.character_index = (self.character_index + 1) % len(self.characters)
         if self.transform is None:
             return sample, label
         else:
@@ -311,8 +303,8 @@ class RecognizerTrainingDataset(IterableDataset):
 
     # Borders, cropping the sides of the images, real images used as background with gaussian noise
     def generate_stage_7(self):
-        character = self.characters[self.character_index]
-        label = self.character_index
+        label = random.randrange(0, len(self.characters))
+        character = self.characters[label]
         font_info = random.choice(self.fonts_supporting_glyph(character))
         font_size = self.random_font_size()
         font_size = max(8, font_size)
@@ -358,7 +350,6 @@ class RecognizerTrainingDataset(IterableDataset):
                 64 + y_offset + character_height / 2
             )
 
-        self.character_index = (self.character_index + 1) % len(self.characters)
         if self.transform is None:
             return sample, label
         else:
@@ -366,8 +357,8 @@ class RecognizerTrainingDataset(IterableDataset):
 
     # Characters placed randomly on the screen, underlined text
     def generate_stage_8(self):
-        character = self.characters[self.character_index]
-        label = self.character_index
+        label = random.randrange(0, len(self.characters))
+        character = self.characters[label]
         font_info = random.choice(self.fonts_supporting_glyph(character))
         font_size = self.random_font_size()
         font_size = max(8, font_size)
@@ -445,7 +436,6 @@ class RecognizerTrainingDataset(IterableDataset):
                 64 + y_offset + character_height / 2
             )
 
-        self.character_index = (self.character_index + 1) % len(self.characters)
         if self.transform is None:
             return sample, label
         else:
