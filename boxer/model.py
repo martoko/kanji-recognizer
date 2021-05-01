@@ -31,7 +31,7 @@ class KanjiBoxer(pl.LightningModule):
 
     def training_step(self, batch, batch_index):
         images, character_index, region_score = batch
-        generated_region_score = self(images)
+        generated_region_score, _ = self(images)
         loss = F.mse_loss(generated_region_score, region_score)
 
         self.log('train/loss', loss)

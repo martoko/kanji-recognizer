@@ -139,10 +139,16 @@ class RecognizerTrainingDataset(IterableDataset):
 
     @staticmethod
     def generate_region_score(width: int, height: int, top_left: (int, int), bottom_right: (int, int)) -> Image:
-        region_score = Image.new('L', (width, height), color=(0,))
+        region_score = Image.new('L', (width // 2, height // 2), color=(0,))
         region_score_drawing = ImageDraw.Draw(region_score)
-        region_score_drawing.rectangle((top_left, bottom_right), fill=(255,))
-        # region_score_drawing.ellipse((top_left, bottom_right), fill=(255,))
+        region_score_drawing.rectangle(
+            (
+                (top_left[0] // 2, top_left[1] // 2),
+                (bottom_right[0] // 2, bottom_right[1] // 2)
+            ),
+            fill=(255,)
+        )
+        # region_score_drawing.ellipse((top_left/2, bottom_right/2), fill=(255,))
         return region_score
 
     @staticmethod
