@@ -7,8 +7,7 @@ from random import randint
 from typing import *
 
 import numpy as np
-from PIL import ImageFont, Image, ImageFile, ImageDraw
-from fontTools.ttLib import TTFont
+from PIL import Image, ImageFile, ImageDraw
 from torch.utils.data import IterableDataset
 from torch.utils.data.dataset import T_co
 
@@ -139,6 +138,14 @@ class RecognizerTrainingDataset(IterableDataset):
             return Image.new('RGB', (width, height), color=random_color())
 
     @staticmethod
+    def generate_region_score(width: int, height: int, top_left: (int, int), bottom_right: (int, int)) -> Image:
+        region_score = Image.new('L', (width, height), color=(0,))
+        region_score_drawing = ImageDraw.Draw(region_score)
+        region_score_drawing.rectangle((top_left, bottom_right), fill=(255,))
+        # region_score_drawing.ellipse((top_left, bottom_right), fill=(255,))
+        return region_score
+
+    @staticmethod
     def random_font_size():
         return int(random.choices([
             np.random.normal(15, 3),
@@ -160,10 +167,16 @@ class RecognizerTrainingDataset(IterableDataset):
         drawing = ImageDraw.Draw(sample)
         drawing.text((64, 64), character, font=font, fill=BLACK_COLOR, anchor='mm', language='ja')
 
+        region_score = self.generate_region_score(
+            128, 128,
+            top_left=(64 - width / 2, 64 - height / 2),
+            bottom_right=(64 + width / 2, 64 + height / 2),
+        )
+
         if self.transform is None:
-            return sample, label
+            return sample, label, region_score
         else:
-            return self.transform(sample), label
+            return self.transform(sample), label, self.transform(region_score)
 
     # 50/50 chance between black on white and white on black
     def generate_stage_1(self):
@@ -177,12 +190,19 @@ class RecognizerTrainingDataset(IterableDataset):
         _, _, width, height = font.getbbox(character, anchor='lt', language='ja')
         sample = Image.new('RGB', (128, 128), color=BLACK_COLOR if inverted else WHITE_COLOR)
         drawing = ImageDraw.Draw(sample)
-        drawing.text((64, 64), character, font=font, fill=WHITE_COLOR if inverted else BLACK_COLOR, anchor='mm', language='ja')
+        drawing.text((64, 64), character, font=font, fill=WHITE_COLOR if inverted else BLACK_COLOR, anchor='mm',
+                     language='ja')
+
+        region_score = self.generate_region_score(
+            128, 128,
+            top_left=(64 - width / 2, 64 - height / 2),
+            bottom_right=(64 + width / 2, 64 + height / 2),
+        )
 
         if self.transform is None:
-            return sample, label
+            return sample, label, region_score
         else:
-            return self.transform(sample), label
+            return self.transform(sample), label, self.transform(region_score)
 
     # Colors are now random
     def generate_stage_2(self):
@@ -197,10 +217,16 @@ class RecognizerTrainingDataset(IterableDataset):
         drawing = ImageDraw.Draw(sample)
         drawing.text((64, 64), character, font=font, fill=random_color(), anchor='mm', language='ja')
 
+        region_score = self.generate_region_score(
+            128, 128,
+            top_left=(64 - width / 2, 64 - height / 2),
+            bottom_right=(64 + width / 2, 64 + height / 2),
+        )
+
         if self.transform is None:
-            return sample, label
+            return sample, label, region_score
         else:
-            return self.transform(sample), label
+            return self.transform(sample), label, self.transform(region_score)
 
     # Font sizes can now vary between two sizes
     def generate_stage_3(self):
@@ -215,10 +241,16 @@ class RecognizerTrainingDataset(IterableDataset):
         drawing = ImageDraw.Draw(sample)
         drawing.text((64, 64), character, font=font, fill=random_color(), anchor='mm', language='ja')
 
+        region_score = self.generate_region_score(
+            128, 128,
+            top_left=(64 - width / 2, 64 - height / 2),
+            bottom_right=(64 + width / 2, 64 + height / 2),
+        )
+
         if self.transform is None:
-            return sample, label
+            return sample, label, region_score
         else:
-            return self.transform(sample), label
+            return self.transform(sample), label, self.transform(region_score)
 
     # Completely random font size, and random font
     def generate_stage_4(self):
@@ -234,10 +266,16 @@ class RecognizerTrainingDataset(IterableDataset):
         drawing = ImageDraw.Draw(sample)
         drawing.text((64, 64), character, font=font, fill=random_color(), anchor='mm', language='ja')
 
+        region_score = self.generate_region_score(
+            128, 128,
+            top_left=(64 - width / 2, 64 - height / 2),
+            bottom_right=(64 + width / 2, 64 + height / 2),
+        )
+
         if self.transform is None:
-            return sample, label
+            return sample, label, region_score
         else:
-            return self.transform(sample), label
+            return self.transform(sample), label, self.transform(region_score)
 
     # Random character location (while making sure at least part of the character is still in the center)
     def generate_stage_5(self):
@@ -257,10 +295,16 @@ class RecognizerTrainingDataset(IterableDataset):
         drawing.text((64 + x_offset, 64 + y_offset), character, font=font, fill=random_color(), anchor='mm',
                      language='ja')
 
+        region_score = self.generate_region_score(
+            128, 128,
+            top_left=(64 + x_offset - width / 2, 64 + y_offset - height / 2),
+            bottom_right=(64 + x_offset + width / 2, 64 + y_offset + height / 2),
+        )
+
         if self.transform is None:
-            return sample, label
+            return sample, label, region_score
         else:
-            return self.transform(sample), label
+            return self.transform(sample), label, self.transform(region_score)
 
     # Characters before and after, simulating a sentence
     def generate_stage_6(self):
@@ -296,10 +340,16 @@ class RecognizerTrainingDataset(IterableDataset):
         drawing = ImageDraw.Draw(sample)
         drawing.text((x + x_offset, 64 + y_offset), text, font=font, fill=random_color(), anchor='lm', language='ja')
 
+        region_score = self.generate_region_score(
+            128, 128,
+            top_left=(64 + x_offset - character_width / 2, 64 + y_offset - character_width / 2),
+            bottom_right=(64 + x_offset + character_width / 2, 64 + y_offset + character_width / 2),
+        )
+
         if self.transform is None:
-            return sample, label
+            return sample, label, region_score
         else:
-            return self.transform(sample), label
+            return self.transform(sample), label, self.transform(region_score)
 
     # Borders, cropping the sides of the images, real images used as background with gaussian noise
     def generate_stage_7(self):
@@ -350,15 +400,21 @@ class RecognizerTrainingDataset(IterableDataset):
                 64 + y_offset + character_height / 2
             )
 
+        region_score = self.generate_region_score(
+            128, 128,
+            top_left=(64 + x_offset - character_width / 2, 64 + y_offset - character_width / 2),
+            bottom_right=(64 + x_offset + character_width / 2, 64 + y_offset + character_width / 2),
+        )
+
         if self.transform is None:
-            return sample, label
+            return sample, label, region_score
         else:
-            return self.transform(sample), label
+            return self.transform(sample), label, self.transform(region_score)
 
     # Characters placed randomly on the screen, underlined text
     def generate_stage_8(self):
-        label = random.randrange(0, len(self.characters))
-        character = self.characters[label]
+        character_index = random.randrange(0, len(self.characters))
+        character = self.characters[character_index]
         font_info = random.choice(self.fonts_supporting_glyph(character))
         font_size = self.random_font_size()
         font_size = max(8, font_size)
@@ -436,10 +492,16 @@ class RecognizerTrainingDataset(IterableDataset):
                 64 + y_offset + character_height / 2
             )
 
+        region_score = self.generate_region_score(
+            128, 128,
+            top_left=(64 + x_offset - character_width / 2, 64 + y_offset - character_width / 2),
+            bottom_right=(64 + x_offset + character_width / 2, 64 + y_offset + character_width / 2),
+        )
+
         if self.transform is None:
-            return sample, label
+            return sample, character_index, region_score
         else:
-            return self.transform(sample), label
+            return self.transform(sample), character_index, self.transform(region_score)
 
     def generate(self):
         low = math.floor(self.stage)
@@ -489,8 +551,9 @@ if __name__ == '__main__':
         pathlib.Path(f"generated/training/{stage}").mkdir(parents=True, exist_ok=True)
         iterator = iter(dataset)
         for i in range(len(dataset.characters) if count is None else count):
-            sample, label = next(iterator)
-            sample.save(f"generated/training/{stage}/{i}.png")
+            sample, label, region_score = next(iterator)
+            sample.save(f"generated/training/{stage}/{i}_feature.png")
+            region_score.save(f"generated/training/{stage}/{i}_region_score.png")
 
 
     dataset = RecognizerTrainingDataset(data_folder="data", character_set=character_sets.frequent_kanji_plus)
