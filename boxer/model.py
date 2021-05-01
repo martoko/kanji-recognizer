@@ -37,3 +37,8 @@ class KanjiBoxer(pl.LightningModule):
         self.log('train/loss', loss)
 
         return loss
+
+    def training_epoch_end(self, *args):
+        dataset = self.train_dataloader().dataset
+        dataset.stage += 0.1
+        self.log('train/stage', dataset.stage, prog_bar=True)
