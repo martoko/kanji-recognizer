@@ -24,6 +24,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     datamodule = RecognizerDataModule(**vars(args))
+    datamodule.setup()
+    datamodule.train.stage = 3
     trainer = pl.Trainer.from_argparse_args(args, logger=WandbLogger(entity="mb-haag-itu", project="kanji-boxer",
                                                                      log_model=True))
     model = KanjiBoxer(**vars(args))

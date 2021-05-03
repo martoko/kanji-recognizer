@@ -154,11 +154,16 @@ class RecognizerTrainingDataset(IterableDataset):
     @staticmethod
     def generate_only_char(*args, **kwargs):
         region_score = Image.new('L', (128, 128), color=(0,))
+        # kwargs['fill'] = (127,)
         kwargs['fill'] = (255,)
         drawing = ImageDraw.Draw(region_score)
         drawing.text(*args, **kwargs)
-        # return region_score.filter(ImageFilter.MaxFilter(3))
-        return region_score
+        region_score = region_score.filter(ImageFilter.MaxFilter(7))
+        # kwargs['fill'] = (255,)
+        # drawing = ImageDraw.Draw(region_score)
+        # drawing.text(*args, **kwargs)
+        # return region_score
+        return region_score.resize((64, 64))
 
     @staticmethod
     def random_font_size():
@@ -531,7 +536,8 @@ class RecognizerTrainingDataset(IterableDataset):
             top_left=(64 + x_offset - character_width / 2, 64 + y_offset - character_width / 2),
             bottom_right=(64 + x_offset + character_width / 2, 64 + y_offset + character_width / 2),
         )
-        region_score = self.generate_only_char((64 + x_offset, 64 + y_offset), character, font=font, fill=random_color(), anchor='mm', language='ja')
+        region_score = self.generate_only_char((64 + x_offset, 64 + y_offset), character, font=font,
+                                               fill=random_color(), anchor='mm', language='ja')
 
         if self.transform is None:
             return sample, character_index, region_score
