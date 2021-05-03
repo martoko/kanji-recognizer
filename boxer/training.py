@@ -15,8 +15,8 @@ if __name__ == "__main__":
                         help="the size of the batch used on each training step (default: 128)")
     parser.add_argument("--data-folder", type=str, default="data",
                         help="path to a folder containing train/val/test data (default: data)")
-    parser.add_argument("--learning-rate", type=float, default=1e-4,
-                        help="the learning rate of the the optimizer (default: 1e-4)")
+    parser.add_argument("--learning-rate", type=float, default=1e-3,
+                        help="the learning rate of the the optimizer (default: 1e-3)")
     parser.add_argument("--character-set-name", type=str, default="frequent_kanji_plus",
                         help="name of characters to use (default: frequent_kanji_plus)")
     parser.add_argument("-w", "--num-workers", type=int, default=0,
