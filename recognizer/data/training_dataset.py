@@ -7,7 +7,7 @@ from random import randint
 from typing import *
 
 import numpy as np
-from PIL import Image, ImageFile, ImageDraw
+from PIL import Image, ImageFile, ImageDraw, ImageFilter
 from torch.utils.data import IterableDataset
 from torch.utils.data.dataset import T_co
 
@@ -152,6 +152,15 @@ class RecognizerTrainingDataset(IterableDataset):
         return region_score
 
     @staticmethod
+    def generate_only_char(*args, **kwargs):
+        region_score = Image.new('L', (128, 128), color=(0,))
+        kwargs['fill'] = (255,)
+        drawing = ImageDraw.Draw(region_score)
+        drawing.text(*args, **kwargs)
+        # return region_score.filter(ImageFilter.MaxFilter(3))
+        return region_score
+
+    @staticmethod
     def random_font_size():
         return int(random.choices([
             np.random.normal(15, 3),
@@ -178,6 +187,8 @@ class RecognizerTrainingDataset(IterableDataset):
             top_left=(64 - width / 2, 64 - height / 2),
             bottom_right=(64 + width / 2, 64 + height / 2),
         )
+        region_score = self.generate_only_char((64, 64), character, font=font, fill=BLACK_COLOR, anchor='mm',
+                                               language='ja')
 
         if self.transform is None:
             return sample, label, region_score
@@ -204,6 +215,9 @@ class RecognizerTrainingDataset(IterableDataset):
             top_left=(64 - width / 2, 64 - height / 2),
             bottom_right=(64 + width / 2, 64 + height / 2),
         )
+        region_score = self.generate_only_char((64, 64), character, font=font,
+                                               fill=WHITE_COLOR if inverted else BLACK_COLOR, anchor='mm',
+                                               language='ja')
 
         if self.transform is None:
             return sample, label, region_score
@@ -228,6 +242,8 @@ class RecognizerTrainingDataset(IterableDataset):
             top_left=(64 - width / 2, 64 - height / 2),
             bottom_right=(64 + width / 2, 64 + height / 2),
         )
+        region_score = self.generate_only_char((64, 64), character, font=font, fill=random_color(), anchor='mm',
+                                               language='ja')
 
         if self.transform is None:
             return sample, label, region_score
@@ -252,6 +268,8 @@ class RecognizerTrainingDataset(IterableDataset):
             top_left=(64 - width / 2, 64 - height / 2),
             bottom_right=(64 + width / 2, 64 + height / 2),
         )
+        region_score = self.generate_only_char((64, 64), character, font=font, fill=random_color(), anchor='mm',
+                                               language='ja')
 
         if self.transform is None:
             return sample, label, region_score
@@ -277,6 +295,8 @@ class RecognizerTrainingDataset(IterableDataset):
             top_left=(64 - width / 2, 64 - height / 2),
             bottom_right=(64 + width / 2, 64 + height / 2),
         )
+        region_score = self.generate_only_char((64, 64), character, font=font, fill=random_color(), anchor='mm',
+                                               language='ja')
 
         if self.transform is None:
             return sample, label, region_score
@@ -306,6 +326,9 @@ class RecognizerTrainingDataset(IterableDataset):
             top_left=(64 + x_offset - width / 2, 64 + y_offset - height / 2),
             bottom_right=(64 + x_offset + width / 2, 64 + y_offset + height / 2),
         )
+        region_score = self.generate_only_char((64 + x_offset, 64 + y_offset), character, font=font,
+                                               fill=random_color(), anchor='mm',
+                                               language='ja')
 
         if self.transform is None:
             return sample, label, region_score
@@ -328,10 +351,10 @@ class RecognizerTrainingDataset(IterableDataset):
         after = [random.choice(tuple(font_info.supported_glyphs)) for _ in range(after_count)]
         text = ''.join(before) + character + ''.join(after)
 
-        for character in list(text):
-            left, top, right, bottom = font.getbbox(character, anchor='lt', language='ja')
+        for extra_character in list(text):
+            left, top, right, bottom = font.getbbox(extra_character, anchor='lt', language='ja')
             if right == 0 or bottom == 0:
-                print(f"'{character}' is missing from {os.path.basename(font_info['path'])}")
+                print(f"'{extra_character}' is missing from {os.path.basename(font_info['path'])}")
                 exit(-1)
 
         left, top, right, bottom = font.getbbox(text, anchor='lt', language='ja')
@@ -351,6 +374,9 @@ class RecognizerTrainingDataset(IterableDataset):
             top_left=(64 + x_offset - character_width / 2, 64 + y_offset - character_width / 2),
             bottom_right=(64 + x_offset + character_width / 2, 64 + y_offset + character_width / 2),
         )
+        region_score = self.generate_only_char((64 + x_offset, 64 + y_offset), character, font=font,
+                                               fill=random_color(),
+                                               anchor='mm', language='ja')
 
         if self.transform is None:
             return sample, label, region_score
@@ -373,10 +399,10 @@ class RecognizerTrainingDataset(IterableDataset):
         after = [random.choice(tuple(font_info.supported_glyphs)) for _ in range(after_count)]
         text = ''.join(before) + character + ''.join(after)
 
-        for character in list(text):
-            left, top, right, bottom = font.getbbox(character, anchor='lt', language='ja')
+        for extra_character in list(text):
+            left, top, right, bottom = font.getbbox(extra_character, anchor='lt', language='ja')
             if right == 0 or bottom == 0:
-                print(f"{character} is missing from {os.path.basename(font_info.path)}")
+                print(f"{extra_character} is missing from {os.path.basename(font_info.path)}")
                 exit(-1)
 
         left, top, right, bottom = font.getbbox(text, anchor='lt', language='ja')
@@ -411,6 +437,8 @@ class RecognizerTrainingDataset(IterableDataset):
             top_left=(64 + x_offset - character_width / 2, 64 + y_offset - character_width / 2),
             bottom_right=(64 + x_offset + character_width / 2, 64 + y_offset + character_width / 2),
         )
+        region_score = self.generate_only_char((64 + x_offset, 64 + y_offset),
+                                               character, font=font, fill=random_color(), anchor='mm', language='ja')
 
         if self.transform is None:
             return sample, label, region_score
@@ -436,10 +464,10 @@ class RecognizerTrainingDataset(IterableDataset):
         floating_count = int(abs(np.random.normal(0, 10)))
         floating_characters = [random.choice(tuple(font_info.supported_glyphs)) for _ in range(floating_count)]
 
-        for character in list(text) + floating_characters:
-            left, top, right, bottom = font.getbbox(character, anchor='lt', language='ja')
+        for extra_character in list(text) + floating_characters:
+            left, top, right, bottom = font.getbbox(extra_character, anchor='lt', language='ja')
             if right == 0 or bottom == 0:
-                print(f"{character} is missing from {os.path.basename(font_info.path)}")
+                print(f"{extra_character} is missing from {os.path.basename(font_info.path)}")
                 exit(-1)
 
         left, top, right, bottom = font.getbbox(text, anchor='lt', language='ja')
@@ -463,12 +491,12 @@ class RecognizerTrainingDataset(IterableDataset):
         else:
             drawing.text((x, y), text, font=font, fill=random_color(), anchor='lm', language='ja')
 
-        for character in floating_characters:
-            font_info = random.choice(self.fonts_supporting_glyph(character))
+        for floating_character in floating_characters:
+            font_info = random.choice(self.fonts_supporting_glyph(floating_character))
             font_size = self.random_font_size()
             font_size = max(8, font_size)
-            font = font_info.get(font_size)
-            f_left, f_top, f_right, f_bottom = font.getbbox(character, anchor='lt', language='ja')
+            floating_font = font_info.get(font_size)
+            f_left, f_top, f_right, f_bottom = floating_font.getbbox(floating_character, anchor='lt', language='ja')
 
             floating_x = []
             floating_y = []
@@ -482,11 +510,11 @@ class RecognizerTrainingDataset(IterableDataset):
             floating_x += [random.randint(-f_right, 128)]
 
             if random.random() > 0.9:
-                draw_outlined_text(drawing, (random.choice(floating_x), random.choice(floating_y)), character,
-                                   font=font,
+                draw_outlined_text(drawing, (random.choice(floating_x), random.choice(floating_y)), floating_character,
+                                   font=floating_font,
                                    fill=random_color(), anchor='lt', language='ja')
             else:
-                drawing.text((random.choice(floating_x), random.choice(floating_y)), character, font=font,
+                drawing.text((random.choice(floating_x), random.choice(floating_y)), floating_character, font=font,
                              fill=random_color(), anchor='lt', language='ja')
 
         if random.random() > 0.9:
@@ -503,6 +531,7 @@ class RecognizerTrainingDataset(IterableDataset):
             top_left=(64 + x_offset - character_width / 2, 64 + y_offset - character_width / 2),
             bottom_right=(64 + x_offset + character_width / 2, 64 + y_offset + character_width / 2),
         )
+        region_score = self.generate_only_char((64 + x_offset, 64 + y_offset), character, font=font, fill=random_color(), anchor='mm', language='ja')
 
         if self.transform is None:
             return sample, character_index, region_score
@@ -558,8 +587,9 @@ if __name__ == '__main__':
         iterator = iter(dataset)
         for i in range(len(dataset.characters) if count is None else count):
             sample, label, region_score = next(iterator)
-            sample.save(f"generated/training/{stage}/{i}_feature.png")
-            region_score.save(f"generated/training/{stage}/{i}_region_score.png")
+            character = dataset.characters[label]
+            sample.save(f"generated/training/{stage}/{i}_{character}_feature.png")
+            region_score.save(f"generated/training/{stage}/{i}_{character}_region_score.png")
 
 
     dataset = RecognizerTrainingDataset(data_folder="data", character_set=character_sets.frequent_kanji_plus)
