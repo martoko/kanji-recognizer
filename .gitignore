@@ -140,3 +140,4 @@ cython_debug/
 /lightning_logs
 /wandb
 /generated
+/data/fonts/*.json

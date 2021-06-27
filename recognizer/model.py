@@ -37,7 +37,7 @@ class KanjiRecognizer(pl.LightningModule):
         return logits, loss
 
     def training_step(self, batch, batch_index):
-        images, labels = batch
+        images, labels, _ = batch
         logits, loss = self.loss(images, labels)
 
         self.log('train/loss', loss)
