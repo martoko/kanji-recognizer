@@ -4,18 +4,34 @@ import torchvision
 import wandb
 from torch import optim
 from torch.nn import functional as F
+from vit_pytorch import ViT
 
 from recognizer.data import character_sets
 
 
 class KanjiRecognizer(pl.LightningModule):
-    def __init__(self, character_set_name, **kwargs):
+    def __init__(self, character_set_name, model_type="resnet"):
         super().__init__()
 
         self.character_set = character_sets.character_sets[character_set_name]
 
         # Set up model
-        self.model = torchvision.models.resnet152(num_classes=len(self.character_set))
+        if model_type == "resnet":
+            self.model = torchvision.models.resnet152(num_classes=len(self.character_set))
+        if model_type == "ViT":
+            self.model = ViT(
+                image_size=128,
+                # Number of patches. image_size must be divisible by patch_size.
+                # The number of patches is: n = (image_size // patch_size) ** 2 and n must be greater than 16.
+                patch_size=16,
+                num_classes=len(self.character_set),
+                dim=1024,
+                depth=6,
+                heads=16,
+                mlp_dim=2048,
+                dropout=0.1,
+                emb_dropout=0.1
+            )
 
         # Copy input to hparms
         self.save_hyperparameters()
