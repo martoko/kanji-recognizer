@@ -10,7 +10,7 @@ from recognizer.data import character_sets
 
 
 class KanjiRecognizer(pl.LightningModule):
-    def __init__(self, character_set_name, model_type="resnet"):
+    def __init__(self, character_set_name, model_type="resnet", **kwargs):
         super().__init__()
 
         self.character_set = character_sets.character_sets[character_set_name]
