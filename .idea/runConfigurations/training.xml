@@ -12,7 +12,7 @@
     <option name="ADD_CONTENT_ROOTS" value="true" />
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-    <option name="SCRIPT_NAME" value="$PROJECT_DIR$/training.py" />
+    <option name="SCRIPT_NAME" value="$PROJECT_DIR$/recognizer/training.py" />
     <option name="PARAMETERS" value="--max_epochs 50 --limit_train_batches 20 --batch-size 10 --limit_val_batches 10 --limit_test_batches 2 --log_every_n_steps 10 --val_check_interval 20 --character-set-name aiueo" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />

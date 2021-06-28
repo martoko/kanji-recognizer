@@ -30,15 +30,18 @@ frequent_kanji_plus = list(pathlib.Path("data/characters/frequent_kanji_plus.txt
 
 jouyou_kanji_and_simple_hiragana = jouyou_kanji + simple_hiragana
 
+top_100_kanji = frequent_kanji[:100]
+
 character_sets = {
-    "kanji": kanji,
-    "jouyou_kanji": jouyou_kanji,
-    "frequent_kanji": frequent_kanji,
-    "frequent_kanji_plus": frequent_kanji_plus,
-    "jouyou_kanji_and_simple_hiragana": jouyou_kanji_and_simple_hiragana,
-    "simple_hiragana": simple_hiragana,
-    "simpler_hiragana": simpler_hiragana,
-    "aiueo": aiueo
+    "kanji": kanji,  # 27,882
+    "jouyou_kanji": jouyou_kanji,  # 1,006
+    "top_100_kanji": top_100_kanji,  # 100
+    "frequent_kanji": frequent_kanji,  # 2,501
+    "frequent_kanji_plus": frequent_kanji_plus,  # 2,502
+    "jouyou_kanji_and_simple_hiragana": jouyou_kanji_and_simple_hiragana,  # 1,078
+    "simple_hiragana": simple_hiragana,  # 72
+    "simpler_hiragana": simpler_hiragana,  # 45
+    "aiueo": aiueo  # 6
 }
 
 if __name__ == "__main__":
