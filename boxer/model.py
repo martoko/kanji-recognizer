@@ -4,7 +4,7 @@ from torch.nn import functional as F
 from torchvision import transforms
 import wandb
 
-from craft import CRAFT
+from boxer.craft import CRAFT
 from recognizer.data import character_sets
 
 
