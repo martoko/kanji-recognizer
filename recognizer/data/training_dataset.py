@@ -99,6 +99,7 @@ class RecognizerTrainingDataset(IterableDataset):
         fonts_folder = os.path.join(data_folder, "fonts")
         background_images_folder = os.path.join(data_folder, "backgrounds")
         self.font_infos = fonts.font_infos_in_folder(fonts_folder, character_set)
+        print(f"Found {len(self.font_infos)} fonts")
         self.transform = transform
         self.characters = character_set
         self.background_images = [
@@ -158,7 +159,8 @@ class RecognizerTrainingDataset(IterableDataset):
         kwargs['fill'] = (255,)
         drawing = ImageDraw.Draw(region_score)
         drawing.text(*args, **kwargs)
-        region_score = region_score.filter(ImageFilter.MaxFilter(7))
+        region_score = region_score.filter(ImageFilter.MaxFilter(19))
+        region_score = region_score.filter(ImageFilter.MinFilter(17))
         # kwargs['fill'] = (255,)
         # drawing = ImageDraw.Draw(region_score)
         # drawing.text(*args, **kwargs)
@@ -595,7 +597,18 @@ if __name__ == '__main__':
             sample, label, region_score = next(iterator)
             character = dataset.characters[label]
             sample.save(f"generated/training/{stage}/{i}_{character}_feature.png")
-            region_score.save(f"generated/training/{stage}/{i}_{character}_region_score.png")
+            overlay = region_score.convert("RGBA")
+            new_data = []
+            for item in overlay.getdata():
+                if item[0] == 255 and item[1] == 255 and item[2] == 255:
+                    new_data.append((255,50,50,127))
+                else:
+                    new_data.append((0,0,0,0))
+            overlay.putdata(new_data)
+            sample.convert("RGBA")
+            sample.paste(overlay.resize((128,128), Image.NEAREST),
+                    mask=overlay.resize((128,128), Image.NEAREST))
+            sample.save(f"generated/training/{stage}/{i}_{character}_region_score.png")
 
 
     dataset = RecognizerTrainingDataset(data_folder="data", character_set=character_sets.frequent_kanji_plus)

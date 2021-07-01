@@ -1,5 +1,3 @@
-import argparse
-
 import pytorch_lightning as pl
 from pytorch_lightning.loggers import WandbLogger
 
@@ -8,7 +6,7 @@ from recognizer.model import KanjiRecognizer
 
 if __name__ == "__main__":
     config = {
-        'batch_size': 128,
+        'batch_size': 4,
         'data_folder': 'data',
         'learning_rate': 1e-3,
         'character_set_name': 'top_100_kanji',
@@ -28,7 +26,14 @@ if __name__ == "__main__":
         logger=config['logger'],
         auto_lr_find=True
     )
+    tuner = trainer.tuner
     model = KanjiRecognizer(**config)
-    trainer.tune(model, datamodule=datamodule)
-    print(model.learning_rate)
+
+    lr_finder = tuner.lr_find(model, datamodule=datamodule, num_training=20)
+    fig = lr_finder.plot()
+    fig.show()
+    suggested_lr = lr_finder.suggestion()
+    print(suggested_lr)
+    # trainer.tune(model, datamodule=datamodule)
+    # print(model.learning_rate)
     # trainer.fit(model, datamodule=datamodule)
