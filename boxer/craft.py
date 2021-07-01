@@ -38,13 +38,13 @@ class vgg16_bn(torch.nn.Module):
         self.slice4 = torch.nn.Sequential()
         self.slice5 = torch.nn.Sequential()
         for x in range(12):  # conv2_2
-            self.slice1.add_module(str(x), vgg_pretrained_features[x].cuda())
+            self.slice1.add_module(str(x), vgg_pretrained_features[x])
         for x in range(12, 19):  # conv3_3
-            self.slice2.add_module(str(x), vgg_pretrained_features[x].cuda())
+            self.slice2.add_module(str(x), vgg_pretrained_features[x])
         for x in range(19, 29):  # conv4_3
-            self.slice3.add_module(str(x), vgg_pretrained_features[x].cuda())
+            self.slice3.add_module(str(x), vgg_pretrained_features[x])
         for x in range(29, 39):  # conv5_3
-            self.slice4.add_module(str(x), vgg_pretrained_features[x].cuda())
+            self.slice4.add_module(str(x), vgg_pretrained_features[x])
 
         # fc6, fc7 without atrous conv
         self.slice5 = torch.nn.Sequential(
