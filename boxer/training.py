@@ -7,26 +7,27 @@ from boxer.model import KanjiBoxer
 from recognizer.data.data_module import RecognizerDataModule
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Train a model to find the location of kanji.")
-    parser = pl.Trainer.add_argparse_args(parser)
-    parser.add_argument("-r", "--resume", type=str, default=False,
-                        help="resumes a previous run given a run id or run path")
-    parser.add_argument("-b", "--batch-size", type=int, default=128,
-                        help="the size of the batch used on each training step (default: 128)")
-    parser.add_argument("--data-folder", type=str, default="data",
-                        help="path to a folder containing train/val/test data (default: data)")
-    parser.add_argument("--learning-rate", type=float, default=1e-3,
-                        help="the learning rate of the the optimizer (default: 1e-3)")
-    parser.add_argument("--character-set-name", type=str, default="frequent_kanji_plus",
-                        help="name of characters to use (default: frequent_kanji_plus)")
-    parser.add_argument("-w", "--num-workers", type=int, default=0,
-                        help="number of workers to apply to data loading (default: 0)")
-    args = parser.parse_args()
+    args = {
+      "batch_size": 4,
+      "data_folder":"data",
+      "learning_rate": 6.9e-05,
+      "character_set_name": "frequent_kanji_plus",
+      "num_workers": 0,
+      "model_type": "resnet",
+      "accumulate_grad_batches": 1
+    }
 
-    datamodule = RecognizerDataModule(**vars(args))
+    datamodule = RecognizerDataModule(**args)
     datamodule.setup()
     datamodule.train.stage = 3
-    trainer = pl.Trainer.from_argparse_args(args, logger=WandbLogger(entity="mb-haag-itu", project="kanji-boxer",
-                                                                     log_model=True))
-    model = KanjiBoxer(**vars(args))
+    trainer = pl.Trainer(
+      limit_train_batches=3 * args["accumulate_grad_batches"],
+      val_check_interval=3 * args["accumulate_grad_batches"],
+      max_epochs=10,
+      stochastic_weight_avg=True,
+      accumulate_grad_batches=args["accumulate_grad_batches"],
+      gpus=0,
+      logger=WandbLogger(entity="mb-haag-itu", log_model=True, project="kanji-boxer")
+    )
+    model = KanjiBoxer(**args)
     trainer.fit(model, datamodule=datamodule)

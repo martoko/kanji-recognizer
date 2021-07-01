@@ -1,6 +1,8 @@
 import pytorch_lightning as pl
 from torch import optim
 from torch.nn import functional as F
+from torchvision import transforms
+import wandb
 
 from craft import CRAFT
 from recognizer.data import character_sets
@@ -39,6 +41,18 @@ class KanjiBoxer(pl.LightningModule):
         return loss
 
     def training_epoch_end(self, *args):
+        images, character_index, region_scores = next(iter(self.train_dataloader()))
+        generated_region_scores, _ = self(images)
+        self.log('train/images', [wandb.Image(x) for x in images[:8]])
+        self.log('train/region_scores', [wandb.Image(x) for x in
+            region_scores[:8]])
+        self.log('train/generated_region_scores', [wandb.Image(x) for x in
+            generated_region_scores[:8]])
+       # iwandb.log({"train/failure_cases": [wandb.Image(
+       #          case["image"],
+       #          caption=f"Prediction: {case['prediction']} Truth: {case['label']}"
+       #      ) for case in sorted(failure_cases, key=lambda item: item['confidence'])[:1]]}, commit=False)
+
         dataset = self.train_dataloader().dataset
         dataset.stage += 0.1
         self.log('train/stage', dataset.stage, prog_bar=True)
