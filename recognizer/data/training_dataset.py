@@ -1,4 +1,3 @@
-import glob
 import math
 import os
 import pathlib
@@ -11,7 +10,7 @@ from PIL import Image, ImageFile, ImageDraw, ImageFilter
 from torch.utils.data import IterableDataset
 from torch.utils.data.dataset import T_co
 
-from recognizer.data import character_sets, fonts
+from recognizer.data import fonts
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
@@ -90,6 +89,23 @@ def eat_sides(image, left, right, top, bottom):
         (0, image.height),
         (image.width, random.randint(bottom, image.height))
     ), fill=color)
+
+
+def luminance(color):
+    color = [c / 255 for c in color]
+    color = [
+        c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4
+        for c in color
+    ]
+    return color[0] * 0.2126 + color[1] * 0.7152 + color[2] * 0.0722
+
+
+def contrast(left, right):
+    left_luminance = luminance(left)
+    right_luminance = luminance(right)
+    brightest = max(left_luminance, right_luminance)
+    darkest = min(left_luminance, right_luminance)
+    return (brightest + 0.05) / (darkest + 0.05)
 
 
 class RecognizerTrainingDataset(IterableDataset):
@@ -175,6 +191,84 @@ class RecognizerTrainingDataset(IterableDataset):
             np.random.normal(35, 3),
             np.random.normal(50, 3)
         ], weights=[10, 3, 1, 1])[0])
+
+    def new_generate(self, stage):
+        low = math.floor(stage)
+        high = low + 1
+        if random.random() > self.stage - math.floor(self.stage):
+            stage = low
+        else:
+            stage = high
+
+        stage = min(stage, 8)
+
+        if stage == 0:
+            return self.new_generate_stage_X(
+                width=128,
+                height=128,
+                background_color=WHITE_COLOR,
+                font_size=32,
+                font_color=BLACK_COLOR
+            )
+        if stage == 1:
+            return self.new_generate_stage_X(
+                width=128,
+                height=128,
+                background_color=WHITE_COLOR,
+                font_size=32,
+                font_color=BLACK_COLOR
+            )
+        if stage == 2:
+            return self.new_generate_stage_X(
+                width=128,
+                height=128,
+                background_color=random_color(),
+                font_size=32,
+                font_color=random_color()
+            )
+        if stage == 3:
+            return self.new_generate_stage_X(
+                width=128,
+                height=128,
+                background_color=random_color(),
+                font_size=random.choice([20, 32]),
+                font_color=random_color()
+            )
+        if stage == 4:
+            return self.new_generate_stage_X(
+                width=128,
+                height=128,
+                background_color=random_color(),
+                font_size=random.randint(15, 50),
+                font_color=random_color()
+            )
+        if stage == 5:
+            return self.new_generate_stage_X()
+        if stage == 6:
+            return self.new_generate_stage_X()
+        if stage == 7:
+            return self.new_generate_stage_X()
+        if stage == 8:
+            return self.new_generate_stage_X()
+
+    def new_generate_stage_X(self, width, height, background_color, font_size, font_color):
+        label = random.randrange(0, len(self.characters))
+        character = self.characters[label]
+        font_info = random.choice(self.fonts_supporting_glyph(character))
+        font = font_info.get(font_size)
+
+        _, _, character_width, character_height = font.getbbox(character, anchor='lt', language='ja')
+        sample = Image.new('RGB', (width, height), color=background_color)
+        drawing = ImageDraw.Draw(sample)
+        drawing.text((width / 2, height / 2), character, font=font, fill=font_color, anchor='mm', language='ja')
+
+        region_score = self.generate_region_score(
+            128, 128,
+            top_left=(64 - character_width / 2, 64 - character_height / 2),
+            bottom_right=(64 + character_width / 2, 64 + character_height / 2),
+        )
+
+        return sample, label, region_score
 
     # Generates very simple fixed size characters black on white
     def generate_stage_0(self):
@@ -601,13 +695,13 @@ if __name__ == '__main__':
             new_data = []
             for item in overlay.getdata():
                 if item[0] == 255 and item[1] == 255 and item[2] == 255:
-                    new_data.append((255,50,50,127))
+                    new_data.append((255, 50, 50, 127))
                 else:
-                    new_data.append((0,0,0,0))
+                    new_data.append((0, 0, 0, 0))
             overlay.putdata(new_data)
             sample.convert("RGBA")
-            sample.paste(overlay.resize((128,128), Image.NEAREST),
-                    mask=overlay.resize((128,128), Image.NEAREST))
+            sample.paste(overlay.resize((128, 128), Image.NEAREST),
+                         mask=overlay.resize((128, 128), Image.NEAREST))
             sample.save(f"generated/training/{stage}/{i}_{character}_region_score.png")
 
 
